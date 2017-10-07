@@ -4,7 +4,7 @@
 ---
 这是个可以自定义部分背景元素背景色的夜间模式
 
-*baidu_key_tool*
+[*baidu_key_tool*](https://greasyfork.org/zh-CN/scripts/33823-%E7%99%BE%E5%BA%A6%E6%90%9C%E7%B4%A2%E5%BF%AB%E6%8D%B7%E9%94%AE%E5%8A%A9%E6%89%8B)
 ---
 * 功能描述:
     * 自定义部分
