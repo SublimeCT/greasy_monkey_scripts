@@ -4,11 +4,11 @@
 ---
 这是个可以自定义部分背景元素背景色的夜间模式
 
-[*baidu_key_tool*](https://greasyfork.org/zh-CN/scripts/33823-%E7%99%BE%E5%BA%A6%E6%90%9C%E7%B4%A2%E5%BF%AB%E6%8D%B7%E9%94%AE%E5%8A%A9%E6%89%8B)
+*baidu_key_tool [立即安装](https://greasyfork.org/zh-CN/scripts/33823-%E7%99%BE%E5%BA%A6%E6%90%9C%E7%B4%A2%E5%BF%AB%E6%8D%B7%E9%94%AE%E5%8A%A9%E6%89%8B)*
 ---
 * 功能描述:
     * 自定义部分
         - 按序号跳转搜索结果页面, 支持固定模式开关键(on/off),小键盘数字键跳转
-        - 快速定位搜索框, 支持固定模式开关键(on/off),指定键跳转
+        - 快速定位搜索框, 支持固定模式开关键(on/off),指定键(默认小键盘中的 . )跳转
     * 可选固定功能
         - 页面加载完毕后为所有搜索结果标号
