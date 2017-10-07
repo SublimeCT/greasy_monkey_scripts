@@ -10,7 +10,7 @@
 // ==/UserScript==z
 window._sven_load = window.onload;
 window.onload = function(){
-    typeof window._sven_load === 'function' ? window._sven_load() : null
+    typeof window._sven_load === 'function' ? window._sven_load() : null;
     (function(config){
         // 忽略 URL
         for (var mode in config.ignore) {
