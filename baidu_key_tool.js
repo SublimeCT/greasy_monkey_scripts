@@ -84,15 +84,17 @@
             return this
         },
         /**
-         * 显示行号
+         * 显示 numer
          * @return object this
          */
         showIndex () {
             for (let i=0; i<10; i++) {
                 const item = document.getElementById(i+1)
                 try {
+                    const locationDom = item.querySelector('h3')
                     const indexNode = this._getIndexNode(i+1)
-                    item.querySelector('h3').insertBefore(indexNode, item.querySelector('h3>:first-child'))
+                    locationDom.style.position = 'relative'
+                    locationDom.insertBefore(indexNode, item.querySelector('h3>:first-child'))
                 } catch (e) {
                     // 某些非主流搜索结果忽略了, 但不影响事件行为
                 }
