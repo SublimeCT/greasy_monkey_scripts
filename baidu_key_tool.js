@@ -4,20 +4,17 @@
 // @author          sven
 // @create          2017-10-06 20:32:56
 // @run-at          document-end
-// @version         0.0.1
+// @version         0.0.3
 
-// @connect         功能描述:
-// @connect             自定义部分
-// @connect                 1. 自定义百度搜索结果跳转快捷键, 支持固定模式开关键(on/off)+数字键或小键盘数字键跳转
-// @connect                 2. 通过快捷键快速定位搜索框, 支持固定模式开关键(on/off)+指定键跳转
-// @connect             可选固定功能
-// @connect                 1. 页面加载完毕或为所有搜索结果标号
+// @connect         简介: 通过快捷键实现你想要的功能
+// @connect         详细介绍及更新记录: https://github.com/SublimeCT/TampermonkeyScripts
+// @content         Github地址: https://github.com/SublimeCT/TampermonkeyScripts
 
 // @include         /^https\:\/\/www\.baidu\.com\/s/
 
 // @namespace       hellosc@qq.com
 // @copyright       2017, sven
-// @description     有空再写 ...
+// @description     通过快捷键实现你想要的功能, 快速跳转搜索结果, 快速定位搜索框
 // @lastmodified    2017-10-07
 
 // ==/UserScript==
@@ -30,7 +27,16 @@
      * @type Object
      */
     const Baidu_Key_Tool = {
+        /**
+         * 此处问题较多, 后期将统一配置和行为对象接口
+         */
         options: {
+            // 不启用的行为集合 | array>string
+            off: [],
+            // 自定义行为中的参数 | array>object>{string: object}
+            setAction: []
+        },
+        actions: {
             index: {
                 // 默认是否开启
                 state: true,
@@ -41,7 +47,7 @@
                 // 自定义参数
                 params: {},
                 // 事件函数
-                event ({key: {index, code}}) {
+                event ({key: {index, keyCode}}) {
                     document.getElementById(index+1).querySelector('a').click()
                 }
             },
@@ -50,11 +56,20 @@
                 switchKeyCode: null,
                 keyCodes: [110],
                 params: {},
-                event ({key: {code}}) {
+                event ({key: {keyCode}}) {
                     setTimeout(() => {
                         document.getElementById('kw').focus()
                         document.getElementById('kw').select()
                     }, 77)
+                }
+            },
+            showKeyCode: {
+                state: false,
+                switchKeyCode: null,
+                keyCodes: [],
+                params: {},
+                event ({key: {keyCode}, event}) {
+                    console.log('test')
                 }
             }
         },
@@ -79,7 +94,7 @@
             if (options) this.options = Object.assign(this.options, options)
 
             // 动态监听页面变化
-            this.listenDom.init(this)
+            this.showIndex().listenDom.init(this)
 
             return this
         },
@@ -108,29 +123,46 @@
         listening () {
             document.addEventListener('keydown', event => {
                 const keyCode = event.keyCode
+                // 执行
                 // 遍历所有按键行为
-                for (let i in this.options) {
-                    const action = this.options[i]
+                for (let i in this.actions) {
+                    const action = this.actions[i]
                     // 判断是否为模式开关
                     this._switchAction(keyCode, action)
 
                     // 检测该行为是否开启
                     if (!action.state) continue
 
-                    // 遍历监听的按键[默认可重复执行多个行为]
-                    for (let [index, code] of action.keyCodes.entries()) {
-                        if (keyCode === code) {
-                            action.event({
-                                key: {
-                                    index,
-                                    code
-                                }
-                            })
-                        }
-                    }
+                    // 检测是否触发行为
+                    this._checkKeyCode(event, action)
                 }
             })
             return this
+        },
+        _checkKeyCode (event, action) {
+            const keyCode = event.keyCode
+            // 判断该行为是否是任意键触发
+            if (action.keyCodes.length == 0) {
+                action.event({
+                    event,
+                    key: {
+                        keyCode
+                    }
+                })
+            } else {
+                // 遍历监听的按键[默认可重复执行多个行为]
+                for (let [index, code] of action.keyCodes.entries()) {
+                    if (keyCode === code) {
+                        action.event({
+                            event,
+                            key: {
+                                index,
+                                keyCode
+                            }
+                        })
+                    }
+                }
+            }
         },
         /**
          * 创建序号 node element
@@ -162,8 +194,8 @@
             }
         }
     }
+
     Baidu_Key_Tool
         .init()
-        .showIndex()
         .listening()
 })();
