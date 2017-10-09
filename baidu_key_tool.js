@@ -86,7 +86,7 @@
                         _this.showIndex()
                         this.dom = document.getElementById('1')
                     }
-                }, 1000)
+                }, 1300)
             }
         },
         init (options = null) {
@@ -121,6 +121,7 @@
          * @return object this
          */
         listening () {
+
             document.addEventListener('keydown', event => {
                 const keyCode = event.keyCode
                 // 执行
