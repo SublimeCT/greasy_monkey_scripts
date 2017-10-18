@@ -32,7 +32,9 @@
          */
         selector: {
             // 输入框
-            input: document.getElementById('kw')
+            input: document.getElementById('kw'),
+            // 当前页页码 DOM
+            pageNum: document.querySelector('#page>strong>.pc')
         },
         /**
          * 已按下的键
@@ -102,7 +104,7 @@
          * 初始化页面页码信息
          */
         _refreshIndex () {
-            this.pageNum = document.querySelector('.c-icon-bear-p').parentNode.parentNode.querySelector('.pc').innerHTML
+            this.pageNum = document.querySelector('#page>strong>.pc').innerHTML
             this.firstIndex = 10 * (this.pageNum - 1) + 1
         },
         /**
@@ -146,6 +148,7 @@
                 if (this.isInputing) return
                 const keyCode = event.keyCode
                 this.pressed.push(keyCode)
+                // console.warn('按下' + keyCode, this.pressed)
                 // 遍历所有按键行为
                 for (let i in this.actions) {
                     const action = this.actions[i]
@@ -162,6 +165,7 @@
                 if (this.isInputing) return
                 const keyCode = event.keyCode
                 this.pressed = this.pressed.filter(v => v!=keyCode)
+                // console.warn('松开' + keyCode, this.pressed)
                 // 遍历所有按键行为
                 for (let i in this.actions) {
                     const action = this.actions[i]
@@ -175,18 +179,35 @@
         },
         _checkKeyCode (event, action, eventType) {
             const keyCode = event.keyCode
-            const pressed = [...this.pressed]
+            const params = {
+                event,
+                key: {
+                    keyCode
+                },
+                firstIndex: this.firstIndex,
+                pressed: this.pressed,
+                pageNum: this.pageNum
+            }
             // 判断该行为是否是任意键触发
             if (action.keyCodes[eventType].length === 1 && action.keyCodes[eventType][0] === -1) {
-                action[eventType + 'Event']({event, key:{keyCode}, pressed})
+                this._triggerHeadler({action, eventType, params})
             } else {
                 // 遍历监听的按键
                 for (let [index, code] of action.keyCodes[eventType].entries()) {
                     if (keyCode === code && action[eventType + 'Event']) {
-                        action[eventType + 'Event']({event, key:{index,keyCode, pressed}})
+                        params.key.index = index
+                        this._triggerHeadler({action, eventType, params})
                     }
                 }
             }
+        },
+        /**
+         * 触发对应事件回调, 并根据返回值修改属性
+         * @param Object param
+         */
+        _triggerHeadler ({action, event, eventType, params}) {
+            const endData = action[eventType + 'Event'](params)
+            endData ? Object.assign(this, endData) : null
         },
         /**
          * 创建序号 node element
@@ -323,9 +344,12 @@
         constructor () {
             super({ down: [97, 98, 99, 100, 101, 102, 103, 104, 105, 96] })
         }
-        downEvent ({key: {index, keyCode}, pressed = []}) {
+        downEvent ({key: {index, keyCode}, pressed, firstIndex = 1}) {
             if (pressed.length === 1) {
-                document.getElementById(index+1).querySelector('a').click()        
+                // 跳转新标签页时无法监听 keyup 事件, 需要手动移除对应 keyCode
+                pressed = pressed.filter(v => v!==keyCode)
+                document.getElementById(firstIndex + index).querySelector('a').click()
+                return { pressed }
             }
         }
     }
@@ -337,17 +361,50 @@
         constructor () {
             super({ down: [110] })
         }
-        downEvent ({key: {keyCode}, pressed = []}) {
+        downEvent ({key: {keyCode}, pressed}) {
             if (pressed.length === 1) {
                 setTimeout(() => {
                     document.getElementById('kw').focus()
                     document.getElementById('kw').select()
                 }, 77)
+                pressed = pressed.filter(v => v!==keyCode)
+                return { pressed }
+            }
+        }
+    }
+
+    /**
+     * 翻页
+     */
+    class PageAction extends Baidu_Key_Tool_Action {
+        constructor () {
+            super({ down: [17, 37, 39] })
+        }
+        downEvent ({key: {keyCode}, pressed, pageNum}) {
+            if (pressed.includes(17) && pressed.length === 2) {
+                let pageText = 0
+                if (pressed.includes(37)) {
+                    pressed = pressed.filter(v => v!==17 && v!==37)
+                    pageText = '上一页'
+                } else if (pressed.includes(39)) {
+                    pressed = pressed.filter(v => v!==17 && v!==39)
+                    pageText = '下一页'
+                } else {
+                    return
+                }
+                document.querySelectorAll('#page>a.n').forEach(
+                    btn => {
+                        if (btn.innerHTML.indexOf(pageText) !== -1) {
+                            btn.click()
+                        }
+                    }
+                )
+                return { pressed }                
             }
         }
     }
 
     Baidu_Key_Tool
-        .init({actions: {search: new SearchAction(), click: new ClickAction}})
+        .init({actions: {search: new SearchAction(), click: new ClickAction, page: new PageAction}})
         .listening()
 })();
