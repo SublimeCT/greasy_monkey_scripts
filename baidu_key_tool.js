@@ -4,11 +4,10 @@
 // @author          sven
 // @create          2017-10-06 20:32:56
 // @run-at          document-end
-// @version         0.0.3
+// @version         0.0.4
 
 // @connect         简介: 通过快捷键实现你想要的功能
 // @connect         详细介绍及更新记录: https://github.com/SublimeCT/TampermonkeyScripts
-// @content         Github地址: https://github.com/SublimeCT/TampermonkeyScripts
 
 // @include         /^https\:\/\/www\.baidu\.com\/s/
 
