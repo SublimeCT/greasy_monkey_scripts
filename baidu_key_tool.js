@@ -88,7 +88,7 @@
          */
         init ({options = null, actions = null}) {
             // 合并 options
-            if (options) this.options = Object.assign(this.options, options)
+            if (options) Object.assign(this.options, options)
             // 获取页面页码信息
             this._refreshIndex()
             // 动态监听页面变化
@@ -131,7 +131,8 @@
                     locationDom.style.position = 'relative'
                     locationDom.insertBefore(indexNode, item.querySelector('h3>:first-child'))
                 } catch (e) {
-                    throw new Error(e)
+                    console.warn('序号渲染失败', this)
+                    // throw new Error(e)
                     // 某些非主流搜索结果忽略了, 但不影响事件行为
                 }
             }
@@ -176,6 +177,12 @@
             })
             return this
         },
+        /**
+         * 触发事件类型对应的行为
+         * @param Object event 
+         * @param Object action 行为对象
+         * @param String eventType 事件类型
+         */
         _checkKeyCode (event, action, eventType) {
             const keyCode = event.keyCode
             const params = {
@@ -232,6 +239,11 @@
 
             return indexNode
         },
+        /**
+         * 判断是否触发行为开关
+         * @param Number keyCode 
+         * @param Object action 
+         */
         _switchAction (keyCode, action) {
             if (keyCode === action.switchKeyCode) {
                 action.state = !action.state
@@ -297,12 +309,12 @@
          */
         get keyCodes () {
             if (typeof this._keyCodes === 'undefined') {
-                throw new Error('shit man')
+                throw new Error('keyCodes is not found')
             }
             return this._keyCodes
         }
         set keyCodes (v) {
-            if (typeof v !== 'object' || typeof v === 'undefined' || typeof v === 'undefined') {
+            if (typeof v !== 'object' || typeof v.up === 'undefined' || typeof v.down === 'undefined') {
                 this._paramError('keyCodes')
             }
             this._keyCodes = v

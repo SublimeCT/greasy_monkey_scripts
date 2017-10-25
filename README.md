@@ -45,6 +45,9 @@
     - 定位地址栏
         `ctrl+l`
 
+### 已知 Bug
+- 当前页搜索结果数少于 9 报错
+
 ### 计划新增功能
 - V0.1.0
     1. [完成]构建任意组合键触发行为
@@ -53,6 +56,8 @@
     4. 完善行为类
     5. 完善事件处理逻辑
     6. 使用 `MutationObserver` 取代 `setInterval`
+    7. 将行为开关分离到 `Baidu_Key_Tool_Action` 中
+    
 - V0.2.0
     1. 支持通过录入按键修改快捷键[目前需要在代码中修改 `keyCode`]
     2. 将用户自定义的 `keyCode` 保存至 `localStorage`
