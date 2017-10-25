@@ -13,7 +13,8 @@
 * 样式修改
     - 页面加载完毕后为所有搜索结果增加序号
 
-![2017-10-08 19-31-43屏幕截图.png](https://i.loli.net/2017/10/08/59da0cc1bdab9.png)
+![photo](https://i.loli.net/2017/10/25/59f08eb57402a.png)
+
 ### 使用姿势
 * 按序号跳转搜索结果 [V0.0.1]
     - 默认使用小键盘 `数字键` 跳转对应序号链接
@@ -57,7 +58,7 @@
     5. 完善事件处理逻辑
     6. 使用 `MutationObserver` 取代 `setInterval`
     7. 将行为开关分离到 `Baidu_Key_Tool_Action` 中
-    
+
 - V0.2.0
     1. 支持通过录入按键修改快捷键[目前需要在代码中修改 `keyCode`]
     2. 将用户自定义的 `keyCode` 保存至 `localStorage`
