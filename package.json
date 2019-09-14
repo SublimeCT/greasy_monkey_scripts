@@ -1,0 +1,16 @@
+{
+  "name": "greasy_monkey_scripts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:SublimeCT/greasy_monkey_scripts.git",
+  "author": "sven <hellosc@qq.com>",
+  "license": "MIT",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "devDependencies": {
+    "commitizen": "^4.0.3"
+  }
+}

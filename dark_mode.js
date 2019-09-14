@@ -1,112 +1,48 @@
 // ==UserScript==
-// @name         Dark
+// @name         Dark++
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  try to take over the world!
-// @author       sevn
+// @version      0.4
+// @description  CSS 实现夜间模式; 代码是从贴吧抄的, 嗯 ... over; 由于该实现本质上是覆盖一层, 可能会有未知问题出现: 如 sortTable.js 拖拽无效
+// @icon         https://gss0.baidu.com/7Ls0a8Sm2Q5IlBGlnYG/sys/portraith/item/feb81406?t=1435668917
+// @author       sven
 // @include      https://*
 // @include      http://*
-// @grant        none
-// ==/UserScript==z
-window._sven_load = window.onload;
-window.onload = function(){
-    typeof window._sven_load === 'function' ? window._sven_load() : null;
-    (function(config){
-        // 忽略 URL
-        for (var mode in config.ignore) {
-            if (config.ignore[mode]()) {
-                return false;
-            }
-        }
+// @match        .*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// ==/UserScript==
 
-        // 调整背景色
-        var setBackgroundColor = (function(){
-            // 记录页面加载时的所有dom元素
-            var _cache = {
-                dark: null,
-                darkPlus: null
-            };
-            var _doms = [];
-            return function(color){
-                if (_cache[config.mode]) {
-                    _doms = _cache[config.mode];
-                } else {
-                    _doms = document.querySelectorAll(config.elements[config.mode]);
-                }
-                for (var i=0, dom;dom=_doms[i++];) {
-                   if (dom) {
-                       dom.style.backgroundColor=color;
-                   }
-                }
-            }
-        })();
-        setBackgroundColor('rgb('+config.rgbValue+','+config.rgbValue+','+config.rgbValue+')');
-        // 热键
-        document.addEventListener("keydown", function(event){
-            var keyCode = {
-                '87': {// 增加亮度
-                    method: function(){
-                        if (config.rgbValue<=245) {
-                            config.rgbValue += 10;
-                            keyCode._setColor();
-                        }
-                    }
-                },
-                '81': {// 降低亮度
-                    method: function(){
-                        if (config.rgbValue>=10) {
-                            config.rgbValue -= 10;
-                            keyCode._setColor();
-                        }
-                    }
-                },
-                '192': {// 切换到强力模式
-                    method: function(){
-                        config.mode = 'darkPlus';
-                        keyCode._setColor();
-                    }
-                },
-                _setColor: function(){
-                    var color = 'rgb('+config.rgbValue+','+config.rgbValue+','+config.rgbValue+')';
-                    setBackgroundColor(color);
-                }
-            };
-            if (typeof keyCode[event.keyCode] === 'undefined') {
-                return false;
-            }
-            keyCode[event.keyCode].method();
-        })
-    })({
-        elements: {
-            dark: 'body,div.article,div.article_body,div#main,article,section,div.main,div#article_details,div.project-body,div.aw-content-wrap.clearfix,div.catalog-body.active,main,div.List,div.head_inner,div#container,div.content,div.pb_content,div.p_postlist,div#head,div.p_content,div.l_post,div#content,div#sidebar',
-            darkPlus: 'body :not(script):not(style)'
-        },
-        ignore: {
-            general: function(){// 普通URL匹配
-                var urls = ['www.zybuluo.com', 'docs.golaravel.com', 'http://192.168.1.9:18081'];
-                var isExists = false;
-                urls.forEach(url => {
-                    if(location.href.indexOf(url) >= 0) {
-                        isExists = true;
-                        return false;
-                    }
-                });
-                return isExists;
-            },
-            strict: function(){// 完全匹配
-                var urls = ['https://www.baidu.com/', 'https://www.google.com/'];
-                var isExists = false;
-                urls.forEach(url =>{
-                    if(location.href === url) {
-                        isExists = true;
-                        return false;
-                    }
-                });
-                return isExists;
-            }
-        },
-        rgbValue: 190,
-        mode: 'dark'
-    });
-};
-// Your code here...
+(function() {
+    'use strict';
+    const m = document.createElement('div')
+    m.style.zIndex = '999999'
+    m.style.position = 'absolute'
+    m.style.height = '100vh'
+    m.style.width = '100vw'
+    m.style.position = 'fixed'
+    m.style.top = '0'
+    m.style.left = '-9999px'
+    m.style.id = 'dark-modal'
+    let opacity = GM_getValue('dark_mode_opacity') || 0.4
+    const step = 0.05
+    const setOpacity = ({opa, add, sub} = {}) => {
+        let _opa = opa || opacity
+        _opa = add
+            ? _opa + step
+            : (sub ? (_opa - step) : _opa)
+        _opa = Math.max(0, _opa)
+        _opa = Math.min(1, _opa)
+        GM_setValue('dark_mode_opacity', _opa)
+        console.log('%c[Dark++ plugin] %copacity: ' + _opa.toFixed(2), 'color: teal;', 'color: #FFF;')
+        m.style.outline = `rgba(0, 0, 0, ${opacity = _opa}) solid 10000px`
+    }
+    setOpacity()
+    const keyMap = {
+        81: () => setOpacity({add: true}),
+        87: () => setOpacity({sub: true})
+    }
+    document.body.append(m)
+    document.addEventListener('keydown', evt => {
+        keyMap[evt.keyCode] && keyMap[evt.keyCode](evt)
+    })
+})();
