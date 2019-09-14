@@ -1,15 +1,19 @@
 // ==UserScript==
 // @name         Dark++
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.6
 // @description  CSS 实现夜间模式; 代码是从贴吧抄的, 嗯 ... over; 由于该实现本质上是覆盖一层, 可能会有未知问题出现: 如 sortTable.js 拖拽无效
+// @description  v0.5 增加 file://* 协议支持
+// @description  v0.6 通过修改 run-at: docuemnt-body 实现无感知增加遮罩层
 // @icon         https://gss0.baidu.com/7Ls0a8Sm2Q5IlBGlnYG/sys/portraith/item/feb81406?t=1435668917
 // @author       sven
 // @include      https://*
 // @include      http://*
+// @include      file://*
 // @match        .*
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @run-at       document-body
 // ==/UserScript==
 
 (function() {
