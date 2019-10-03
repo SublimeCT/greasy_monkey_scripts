@@ -37,6 +37,7 @@ const handleRows = (parent, rows) => {
                 : categoryName + index
         }
         if (img.id > 10000) continue // 过滤自定义背景图 ??
+        if (categoryName === '最近使用') continue
         console.log(categoryName, img.name)
         // console.log(img)
         // if (!img.name.trim()) console.log(rows)
