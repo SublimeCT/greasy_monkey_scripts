@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.4.0
+// @version      2.4.1
 // @description  加入随机背景图片(点击右下角小齿轮), 净化剪切板; 移除页面内广告和底部列表中的下载链接, 建议使用 ABP 屏蔽广告!!!; 清理 CSDN 底部提示栏及广告并直接展开内容
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -16,6 +16,7 @@
 // @note         v2.2.1  屏蔽 side toolbar 中的广告 icon
 // @note         v2.3.0  显示当前背景图名称, 完善自定义图片; 删除 `最近使用` 图片类目
 // @note         v2.4.0  增加隐藏设置按钮选项; 修复自定义链接取值错误的问题
+// @note         v2.4.1  修复设置弹窗在特定页面下的宽度异常问题, 增加底部推荐文章 hover 效果
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -172,6 +173,7 @@
                     #bbs_title_bar > .owner_top,.blog-content-box { border-top-left-radius: 8px; border-top-right-radius: 8px; }
                     body > div#page {background-color: transparent}
                     .dl_no_more:after { content: "上边是原话, 脚本作者原本想屏蔽这段话, 但是 CSDN 从未找到自己的底线;\\A 从阅读更多必须注册, 到验证手机号必须关注公众号, 再到大尺度H广告, 严重影响了用户体验;\\A 自从 CSDN 使用明文密码被脱库之后我就不再使用 CSDN 账号, 为了继续阅读 CSDN 内容我写了这个脚本  "; color: teal; display: block; width: 60%; margin: auto; white-space: pre; }
+                    .recommend-box>.recommend-item-box:hover { background-color: rgba(255,255,255,0.8); }
                     /* 脚本设置弹窗 */
                     a.option-box[data-type="$setting"] img {
                         -webkit-transform: rotate(360deg);
@@ -197,6 +199,7 @@
                         justify-content: center;
                     }
                     #setting-dialog section header {
+                        max-width: 550px;
                         height: 50px;
                         font-size: 20px;
                         background: none;
@@ -225,6 +228,7 @@
                         border: 2px solid #DDD;
                     }
                     #setting-dialog section article .row#defaultHideMenu-wrap > .content > label {
+                        cursor: pointer;
                         margin-right: 15px;
                     }
                     #setting-dialog section article .row#defaultHideMenu-wrap > .content > label >input {
@@ -250,6 +254,7 @@
                         letter-spacing: 1px;
                     }
                     #setting-dialog section article {
+                        max-width: 550px;
                         padding: 20px;
                         height: calc(100% - 50px);
                         overflow: auto;
@@ -274,7 +279,7 @@
                         height: 75vh;
                         max-height: 520px;
                         min-height: 370px;
-                        overflow: auto;
+                        /* overflow: auto; */
                         background-color: #EEE;
                         border-radius: 5px;
                         border: 2px solid #DDD;
@@ -395,7 +400,7 @@
                                 <div class="content">
                                     <div class="tips-line">问题/反馈:</div>
                                     <div class="tips-line">
-                                        <a class="link" href="https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback" target="_blank">greasymonkey page</a>
+                                        <a class="link" href="https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback" target="_blank">greasy fork page</a>
                                     </div>
                                 </div>
                             </div>
