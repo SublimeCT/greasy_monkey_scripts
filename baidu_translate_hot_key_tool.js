@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         baidu_translate_hot_key_tool
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.1.0
 // @description  v0.1.0 百度翻译快捷键插件;支持聚焦/搜索内容发音/翻译结果发音
 // @description  v1.0.0 整理代码, 移除兼容部分代码
+// @description  v1.1.0 为了方便纯键盘操作(使用 vimium 插件), 在发音时使输入框失去焦点
 // @icon         http://fanyi.bdstatic.com/static/translation/img/favicon/favicon_d87cd2a.ico
 // @author       sven
 // @include      https://fanyi.baidu.com/*
@@ -48,9 +49,11 @@
                         break
                     case 37: // left
                         originBtn && originBtn.click()
+                        input.blur()
                         break
                     case 39: // right
                         resultBtn && resultBtn.click()
+                        input.blur()
                         break
                 }
             })

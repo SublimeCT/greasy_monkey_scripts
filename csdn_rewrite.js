@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.4.1
+// @version      2.5.0
 // @description  加入随机背景图片(点击右下角小齿轮), 净化剪切板; 移除页面内广告和底部列表中的下载链接, 建议使用 ABP 屏蔽广告!!!; 清理 CSDN 底部提示栏及广告并直接展开内容
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -17,12 +17,17 @@
 // @note         v2.3.0  显示当前背景图名称, 完善自定义图片; 删除 `最近使用` 图片类目
 // @note         v2.4.0  增加隐藏设置按钮选项; 修复自定义链接取值错误的问题
 // @note         v2.4.1  修复设置弹窗在特定页面下的宽度异常问题, 增加底部推荐文章 hover 效果
+// @note         v2.5.0  增加 iteye.com 样式兼容, 使用 GM_setValue 实现跨域共享本地存储数据
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
 // @include      https://*.iteye.com/blog/*
 // @include      https://*.iteye.com/news/*
 // @include      https://ask.csdn.net/questions/*
+// @grant        GM_getValue
+// @grant        GM.getValue
+// @grant        GM_setValue
+// @grant        GM.setValue
 // @run-at       document-start
 // @match        <$URL$>
 // ==/UserScript==
@@ -38,6 +43,14 @@
         const Toolkit = {
             delay (timeout) {
                 return new Promise(resolve => setTimeout(resolve, timeout))
+            },
+            // 通过 LocalStorage / GM_getValue 赋值
+            setValue(key, value) {
+                localStorage.setItem(LOCAL_STORAGE_PREFIX + key, value)
+                GM_setValue(LOCAL_STORAGE_PREFIX + key, value)
+            },
+            getValue(key, defaultValue = null) {
+                return localStorage.getItem(LOCAL_STORAGE_PREFIX + key) || GM_getValue(LOCAL_STORAGE_PREFIX + key, defaultValue)
             }
         }
         const BackgroundImageRange = {
@@ -68,7 +81,7 @@
                 defaultHideMenu: false  // 默认是否隐藏设置按钮
             },
             init() {
-                const range = localStorage.getItem(LOCAL_STORAGE_PREFIX + 'background_ranges')
+                const range = Toolkit.getValue('background_ranges')
                 if (range) {
                     try {
                         const _range = JSON.parse(range)
@@ -92,7 +105,7 @@
                     const syncMethodName = 'sync' + optName[0].toUpperCase() + optName.substr(1)
                     if (typeof window.$CSDNCleaner.BackgroundImageRange[syncMethodName] === 'function') window.$CSDNCleaner.BackgroundImageRange[syncMethodName]()
                 }
-                localStorage.setItem(LOCAL_STORAGE_PREFIX + 'background_ranges', JSON.stringify(window.$CSDNCleaner.BackgroundImageRange.range))
+                Toolkit.setValue('background_ranges', JSON.stringify(window.$CSDNCleaner.BackgroundImageRange.range))
             },
             getImgUrl () {
                 const customUrl = this.range.customUrl
@@ -123,7 +136,8 @@
             _getAllImgIdsByCategorys () {
                 const idList = []
                 for (const categoryName in this.range.categorys) {
-                    idList.push(...IMG_CATEGORYS[this.range.categorys[categoryName]])
+                    console.log(this.range, this.range.categorys, categoryName, this.range.categorys[categoryName], IMG_CATEGORYS)
+                    if (Array.isArray(IMG_CATEGORYS[this.range.categorys[categoryName]])) idList.push(...IMG_CATEGORYS[this.range.categorys[categoryName]])
                 }
                 return idList
             },
@@ -158,7 +172,7 @@
             _getSheets () {
                 const sheets = `
                     body { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
-                    body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
+                    body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
@@ -170,7 +184,14 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
-                    #bbs_title_bar > .owner_top,.blog-content-box { border-top-left-radius: 8px; border-top-right-radius: 8px; }
+                    /* iteye 样式重构 | 2019-11-02 11:19:43 */
+                    body>#page>#content, body>#page>#content>#main .blog_comment { width: auto; }
+                    body>#page>#content>#main .blog_bottom { height: 30px; }
+                    body>#page>#content>#main .blog_comment .comment_content { background-color: rgba(255, 214, 173, 0.2); }
+                    body>#page>#content, body>#page>#content>#main { border: none; }
+                    body>#page>#content>#main #bottoms, body>#page>#content>#main .blog_nav { display: none; }
+                    body>#page>#content>#main .blog_title h3 { font-size: 24px; word-wrap: break-word; margin-bottom: 25px; }
+                    body>#page>#content>#main, #bbs_title_bar > .owner_top,.blog-content-box { border-top-left-radius: 8px; border-top-right-radius: 8px; }
                     body > div#page {background-color: transparent}
                     .dl_no_more:after { content: "上边是原话, 脚本作者原本想屏蔽这段话, 但是 CSDN 从未找到自己的底线;\\A 从阅读更多必须注册, 到验证手机号必须关注公众号, 再到大尺度H广告, 严重影响了用户体验;\\A 自从 CSDN 使用明文密码被脱库之后我就不再使用 CSDN 账号, 为了继续阅读 CSDN 内容我写了这个脚本  "; color: teal; display: block; width: 60%; margin: auto; white-space: pre; }
                     .recommend-box>.recommend-item-box:hover { background-color: rgba(255,255,255,0.8); }
@@ -313,7 +334,7 @@
                 // 图片下的底色
                 document.body.setAttribute('style', 'background-color:#EAEAEA !important')
                 // 解除跳转拦截
-                $ && $("#content_views").off('click')
+                $ && $("#content_views") && $("#content_views").off('click')
                 // 初始化右侧 bottom menu tool bar
                 window.$CSDNCleaner._loadSettings()
                 window.$CSDNCleaner.cleanCopy() // 解禁复制功能
