@@ -1,7 +1,19 @@
-(function() {
+// ==UserScript==
+// @name         Gitea 工具箱
+// @namespace    http://gogs.yunss.com/
+// @version      0.1
+// @description  fork的子项目多分支批量合并
+// @author       Sven
+// @match        *://gogs.yunss.com/*
+// @run-at       document-start
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    'use strict';
+    // @require      file:///Users/test/projects/greasy_monkey_scripts/gitea_toolkit.js
     class Store {
-        static _options = {}
-        static getOptions () {
+        static getOptions() {
             const options = localStorage.getItem('GiteaToolkit_options')
             if (!options) return {}
             try {
@@ -11,7 +23,7 @@
                 return {}
             }
         }
-        static setOption (options) {
+        static setOption(options) {
             localStorage.setItem('GiteaToolkit_options', JSON.stringify(options))
         }
     }
@@ -36,7 +48,7 @@
             }
         }
         // onload () { throw new Error('must implemention') }
-        onload (ctx) {
+        onload(ctx) {
             if (ctx.debug) console.log('获取页面元素')
             const [navbar, main] = document.querySelectorAll('body>div:first-of-type>div')
             if (navbar) ToolkitModule.DOM_NAVBAR = navbar
@@ -44,11 +56,11 @@
         }
     }
     class BatchMergeBranchToolkitModule extends ToolkitModule {
-        constructor () { super() }
+        constructor() { super() }
         name = 'BatchMergeBranchToolkit'
         _currentBranchList = []
-        
-        onload (ctx) {
+
+        onload(ctx) {
             super.onload(ctx)
             if (!ToolkitModule.DOM_MERGE_BTN || !ToolkitModule.INFO_FORK_LINK) return
             ctx.log('获取分支列表, 显示所有分支')
@@ -56,7 +68,7 @@
                 this._showBranchSelector(ctx)
             }, 100);
         }
-        _showBranchSelector (ctx) {
+        _showBranchSelector(ctx) {
             const branchBtn = document.querySelector('.ui.basic.small.compact.button')
             branchBtn.click()
             // 修改创建合并请求按钮
@@ -86,7 +98,6 @@
                 }
                 this._currentBranchList = branchList
                 branchBtn.click()
-                console.log(this._currentBranchList)
                 branchBtn.addEventListener('click', evt => {
                     setTimeout(() => {
                         if (!ToolkitModule.DOM_BRANCH_LIST) return
@@ -109,7 +120,7 @@
                 })
             }, 100)
         }
-        _getCurrentRepostorySelectedBranches () {
+        _getCurrentRepostorySelectedBranches() {
             const name = ToolkitModule.INFO_REPOSTORY_NAME
             const options = Store.getOptions()
             const selectedList = (options.selectedList && options.selectedList[name]) || []
@@ -122,7 +133,7 @@
             options.selectedList[name] = list
             Store.setOption(options)
         }
-        _toggleBranch (checked, branchName) {
+        _toggleBranch(checked, branchName) {
             const selectedList = this._getCurrentRepostorySelectedBranches()
             const index = selectedList.indexOf(branchName)
             if (checked && index === -1) {
@@ -131,13 +142,12 @@
                 selectedList.splice(index, 1)
             }
             this._setCurrentRepostorySelectedBranches(selectedList)
-            console.log()
         }
     }
     class Toolkit {
         debug = true
         options = {}
-        constructor (options = {}) {
+        constructor(options = {}) {
             Object.assign(this.options, options)
             this.emitHook('init')
         }
@@ -148,7 +158,7 @@
         /**
          * 注册工具模块
          */
-        static use (moduleItem) {
+        static use(moduleItem) {
             Array.isArray(moduleItem) ? moduleItem.map(item => Toolkit.use(item)) : Toolkit.modules.push(moduleItem)
         }
         /**
@@ -158,10 +168,10 @@
         emitHook(hook) {
             Toolkit.modules.map(module => module[hook] && typeof module[hook] === 'function' && module[hook](this))
         }
-        log (...args) {
+        log(...args) {
             console.log('%c[Gitea Toolkit] LOG: ', 'color:teal', ...args)
         }
-        static delay (timeout = 200) {
+        static delay(timeout = 200) {
             return new Promise(resolve => setTimeout(resolve, timeout))
         }
     }
