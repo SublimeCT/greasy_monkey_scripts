@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.1
-// @description  加入随机背景图片(点击右下角小齿轮), 净化剪切板; 移除页面内广告和底部列表中的下载链接, 建议使用 ABP 屏蔽广告!!!; 清理 CSDN 底部提示栏及广告并直接展开内容
+// @version      2.5.5
+// @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
@@ -19,6 +19,10 @@
 // @note         v2.4.1  修复设置弹窗在特定页面下的宽度异常问题, 增加底部推荐文章 hover 效果
 // @note         v2.5.0  增加 iteye.com 样式兼容, 使用 GM_setValue 实现跨域共享本地存储数据
 // @note         v2.5.1  修改正文底部 私信求帮助 按钮样式, 使其仅在 hover 状态下可见, 屏蔽底部 copyright 和 原皮肤信息
+// @note         v2.5.2  屏蔽 **的顶部巨幅广告图; 隐藏底部 more-toolbox 按钮组; 修改脚本描述
+// @note         v2.5.3  更新文章内容区域顶部的巨幅广告图屏蔽规则
+// @note         v2.5.4  显示评论列表分页组件; 继续更新广告屏蔽规则
+// @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -52,6 +56,14 @@
             },
             getValue(key, defaultValue = null) {
                 return localStorage.getItem(LOCAL_STORAGE_PREFIX + key) || GM_getValue(LOCAL_STORAGE_PREFIX + key, defaultValue)
+            },
+            showDom(selector, isShow) {
+                const domList = document.querySelectorAll(selector)
+                if (!domList || !domList.length) return
+                const method = isShow ? 'remove' : 'add'
+                for (const d of domList) {
+                    d.classList[method]('d-none')
+                }
             }
         }
         const BackgroundImageRange = {
@@ -137,7 +149,6 @@
             _getAllImgIdsByCategorys() {
                 const idList = []
                 for (const categoryName in this.range.categorys) {
-                    console.log(this.range, this.range.categorys, categoryName, this.range.categorys[categoryName], IMG_CATEGORYS)
                     if (Array.isArray(IMG_CATEGORYS[this.range.categorys[categoryName]])) idList.push(...IMG_CATEGORYS[this.range.categorys[categoryName]])
                 }
                 return idList
@@ -172,12 +183,15 @@
             // 生成 sheets
             _getSheets() {
                 const sheets = `
+                    body {
+                        --comments-avatar-size: 50px;
+                    }
                     body { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -185,6 +199,22 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    /* 评论区样式重写 | 2019-12-27 21:32:24 */
+                    .comment-list-container img.avatar {
+                        width: var(--comments-avatar-size) !important;
+                        height: var(--comments-avatar-size) !important;
+                        margin-top: 4px;
+                        margin-right: 15px !important;
+                    }
+                    .comment-edit-box img.show_loginbox {
+                        width: var(--comments-avatar-size) !important;
+                        height: var(--comments-avatar-size) !important;
+                    }
+                    /* 防止原有的自适应样式导致布局错乱 | 2019-12-27 21:08:09 */
+                    @media screen and (min-width: 1700px) {
+                        .recommend-right.align-items-stretch { color: teal; display: none !important; }
+                    }
+                    /* 隐藏底部 more-toolbox 按钮组 ~~和底部作者 row 中的其他信息~~; 还是保留这一行吧 ... 以后可能会把更多对文章和作者的操作放到这里面 | 2019-12-17 22:18:16 */
                     /* 修改底部 私信求帮助 按钮样式 | 2019-11-23 17:37:52 */
                     .reward-user-box .reward-fexd { width: 100px !important; }
                     .reward-user-box .reward-word { display: none !important; }
@@ -345,6 +375,22 @@
                 // 初始化右侧 bottom menu tool bar
                 window.$CSDNCleaner._loadSettings()
                 window.$CSDNCleaner.cleanCopy() // 解禁复制功能
+                window.$CSDNCleaner._launchPagintion() // 解禁并初始化分页组件
+            },
+            _launchPagintion() {
+                // 监听数据层变动并动态控制分页组件显示
+                Object.defineProperty(csdn.comments, 'pageCount', {
+                    get() { return this._$pageCount || 1 },
+                    set(v) {
+                        console.log('set pageCount: ', v)
+                        this._$pageCount = v // 先保存页数
+                        Toolkit.showDom('#commentPage', v > 1) // 1. 控制分页组件显示
+                        window.$CSDNCleaner._initPagintion() // 2. 重构评论区样式
+                    }
+                })
+            },
+            _initPagintion () {
+                // to bo continue ...
             },
             // 初始化 Options
             initSettings() {
