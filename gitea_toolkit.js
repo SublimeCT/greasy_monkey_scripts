@@ -68,6 +68,11 @@
                 this._showBranchSelector(ctx)
             }, 100);
         }
+        _getUrlByBranchName(name) {
+            const basePath = location.protocol + '//' + location.host + '/'
+            const forkLink = ToolkitModule.INFO_FORK_LINK
+            return basePath + forkLink + '/compare/' + name + '...' + ToolkitModule.INFO_USER_NAME + ':' + name
+        }
         _showBranchSelector(ctx) {
             const branchBtn = document.querySelector('.ui.basic.small.compact.button')
             branchBtn.click()
@@ -78,11 +83,9 @@
                 evt.stopPropagation()
                 // such as: https://gitxxxxxxxx.com/vue_web/shanshou_vue/compare/oem.food.1060...sven:yss.retail.1040.electron
                 const urlList = []
-                const basePath = location.protocol + '//' + location.host + '/'
                 const branches = this._getCurrentRepostorySelectedBranches()
-                const forkLink = ToolkitModule.INFO_FORK_LINK
                 for (const b of branches) {
-                    urlList.push(basePath + forkLink + '/compare/' + b + '...' + ToolkitModule.INFO_USER_NAME + ':' + b)
+                    urlList.push(this._getUrlByBranchName(b))
                 }
                 for (const u of urlList) {
                     await Toolkit.delay()
@@ -108,13 +111,25 @@
                             const checkboxDom = document.createElement('input')
                             checkboxDom.type = 'checkbox'
                             checkboxDom.checked = isSelect
-                            checkboxDom.style.width = '20px'
-                            checkboxDom.style.height = '20px'
+                            checkboxDom.style.setProperty('width', '20px')
+                            checkboxDom.style.setProperty('height', '20px')
+                            checkboxDom.style.setProperty('float', 'left')
+                            checkboxDom.style.setProperty('cursor', 'pointer')
                             item.appendChild(checkboxDom)
                             checkboxDom.addEventListener('click', evt => {
                                 this._toggleBranch(evt.target.checked, evt.target.parentNode.innerText)
                                 evt.stopPropagation()
                             })
+                            const sendPRBtn = document.createElement('button')
+                            sendPRBtn.innerText = '创建合并请求'
+                            sendPRBtn.style.setProperty('float', 'right')
+                            sendPRBtn.style.setProperty('cursor', 'pointer')
+                            sendPRBtn.addEventListener('click', evt => {
+                                const url = this._getUrlByBranchName(branchName)
+                                window.open(url)
+                                evt.stopPropagation()
+                            })
+                            item.appendChild(sendPRBtn)
                         }
                     }, 100)
                 })
