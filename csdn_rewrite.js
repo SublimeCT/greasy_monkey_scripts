@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.5
+// @version      2.5.6
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -23,6 +23,7 @@
 // @note         v2.5.3  更新文章内容区域顶部的巨幅广告图屏蔽规则
 // @note         v2.5.4  显示评论列表分页组件; 继续更新广告屏蔽规则
 // @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
+// @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -199,6 +200,21 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
+                    .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
+                    /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
+                    @media screen and (max-width: 1379px) and (min-width: 1320px) {
+                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                    }
+                    @media screen and (max-width: 1699px) and (min-width: 1550px) {
+                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                    }
+                    @media screen and (max-width: 1549px) and (min-width: 1380px) {
+                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                    }
+                    @media screen and (min-width: 1700px) {
+                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                    }
                     /* 评论区样式重写 | 2019-12-27 21:32:24 */
                     .comment-list-container img.avatar {
                         width: var(--comments-avatar-size) !important;
@@ -389,7 +405,7 @@
                     }
                 })
             },
-            _initPagintion () {
+            _initPagintion() {
                 // to bo continue ...
             },
             // 初始化 Options
