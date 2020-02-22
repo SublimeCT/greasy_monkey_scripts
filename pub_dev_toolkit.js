@@ -3,8 +3,9 @@
 // @license      GPL-3.0-only
 // @namespace    https://pub.dev
 // @icon         https://pub.flutter-io.cn/favicon.ico?hash=nk4nss8c7444fg0chird9erqef2vkhb8
-// @version      1.0.0
+// @version      1.0.1
 // @description  1. copy dependencies info cash as: "dio: ^1.2.3"; ~~2. open package page by search string~~
+// @note         1.0.1 "click to copy" button change to <a>
 // @author       Sven
 // @match        https://pub.dev/packages/*
 // @match        https://pub.dev/packages?q=*
@@ -32,6 +33,7 @@
                 background-color: #0175c2;
                 color: #FFF;
             }
+            #dependencies-info .tips > a { color: #FFF; }
             #dependencies-info .tips:hover { background-color: #37a4ec; }
         `
         constructor() {
@@ -59,12 +61,15 @@
             const infoDom = document.createElement('div')
             const versionDom = document.createElement('div')
             const tipsDom = document.createElement('div')
+            const tipsInfoDom = document.createElement('a')
+            tipsInfoDom.setAttribute('href', 'javascript:;')
             versionDom.innerText = info
             versionDom.classList.add('version')
-            tipsDom.innerText = location.host === 'pub.dev' ? '𝒄𝒍𝒊𝒄𝒌 𝒕𝒐 𝒄𝒐𝒑𝒚' : '点击复制'
+            tipsInfoDom.innerText = location.host === 'pub.dev' ? '𝒄𝒍𝒊𝒄𝒌 𝒕𝒐 𝒄𝒐𝒑𝒚' : '点击复制'
             tipsDom.classList.add('tips')
             infoDom.setAttribute('id', 'dependencies-info')
             infoDom.appendChild(versionDom)
+            tipsDom.appendChild(tipsInfoDom)
             infoDom.appendChild(tipsDom)
             infoDom.addEventListener('click', evt => {
                 if (evt.target === infoDom) return
