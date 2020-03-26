@@ -2,11 +2,12 @@
 // @name         推特工具箱 | twitter toolkit
 // @namespace    https://twitter.com
 // @icon         http://pic.baike.soso.com/ugc/baikepic2/26526/cut-20190524093048-1039431188_jpg_686_550_12779.jpg/300
-// @version      1.0.0
-// @description  鼠标放到用户ID上时显示用户的注册时间 - 显示更多信息以便识别网络水军
+// @version      1.1.0
+// @description  鼠标🖱放到用户ID(.e.g @author)上时显示用户的注册时间 - 显示更多信息以便识别网络水军
 // @author       Sven
 // @license      MIT
-// @match        https://twitter.com/taylorswift13
+// @note         v1.1.0 修复因 ajax-hook 升级导致的报错; 参照 change list 修改引用方式
+// @match        https://twitter.com/*
 // @require      https://unpkg.com/ajax-hook/dist/ajaxhook.min.js
 // @run-at       document-start
 // @grant        none
@@ -43,13 +44,14 @@
                     }
                 }
             })
-            hookAjax({
+            ah.hook({
                 //拦截回调
                 onreadystatechange: (xhr) => {
-                    if (xhr.response.indexOf('"users":{') === -1) return
+                    const responseStr = (xhr.response instanceof ArrayBuffer ? String.fromCharCode.apply(null, Uint16Array) : xhr.response) || ''
+                    if (responseStr.indexOf('"users":{') === -1) return
                     let users = null
                     try {
-                        const res = JSON.parse(xhr.response)
+                        const res = JSON.parse(responseStr)
                         users = (res.globalObjects && res.globalObjects.users)
                     } catch (err) { }
                     if (users === null) return
