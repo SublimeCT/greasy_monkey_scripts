@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.6
+// @version      2.5.7
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -24,6 +24,7 @@
 // @note         v2.5.4  显示评论列表分页组件; 继续更新广告屏蔽规则
 // @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
 // @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
+// @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -187,7 +188,7 @@
                     body {
                         --comments-avatar-size: 50px;
                     }
-                    body { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
+                    body:not(.clean-mode) { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
@@ -200,6 +201,8 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    /* 防止网页主体内容被黑白处理, 适用于特殊日期; CSDN 真是太蠢了，只有 CSDN 把文章内容中的图片都显示成黑白的了, 严重影响阅读! | 2020-04-04 13:17:48 */
+                    html { filter: grayscale(0) !important; }
                     /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
