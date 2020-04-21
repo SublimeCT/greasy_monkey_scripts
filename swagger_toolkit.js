@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Swagger Toolkit
-// @namespace    http://tampermonkey.net/
-// @version      0.0.1
-// @description  Swagger 站点工具脚本, 简化操作
+// @namespace    https://github.com/SublimeCT
+// @version      1.0.0
+// @description  Swagger 站点工具脚本 💪 | 保存浏览历史 🕘 | 显示收藏夹 ⭐️ | 点击 path 快速定位 🎯
 // @author       Sven
 // @icon         https://static1.smartbear.co/swagger/media/assets/swagger_fav.png
 // @match        *://*/docs/index.html
 // @match        *://*/docs/api/index.html
+// @match        https://petstore.swagger.io
 // @grant        none
 // ==/UserScript==
 
@@ -53,7 +54,6 @@
         }
     }, 300);
     const observeHash = evt => {
-        console.log('observe hash')
         const linkedDom = document.getElementById(location.hash.length > 0 ? location.hash.substr(1) : '')
         if (linkedDom) {
             const isOpen = linkedDom.classList.contains('is-open')
@@ -268,9 +268,10 @@
         static panes = []
         addListeners() {
             window.addEventListener('hashchange', () => {
-                console.log('SideBar onhashchange')
-                const row = document.getElementById(location.hash.length > 0 ? location.hash.substr(1) : '')
-                LinkStore.save(row, 'swagger-toolkit-history')
+                const _path = location.hash.length > 0 ? location.hash.substr(1) : ''
+                if (!_path) return
+                const row = document.getElementById(_path) || (document.querySelector(`a[href="#${_path}"]`) && document.querySelector(`a[href="#${_path}"]`).closest('.opblock'))
+                if (row) LinkStore.save(row, 'swagger-toolkit-history')
                 this._updatePane('swagger-toolkit-history')
             })
             return this
