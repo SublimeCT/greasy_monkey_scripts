@@ -1,4 +1,17 @@
-;(() => {
+// ==UserScript==
+// @name         Swagger Toolkit
+// @namespace    http://tampermonkey.net/
+// @version      0.0.1
+// @description  Swagger 站点工具脚本, 简化操作
+// @author       Sven
+// @icon         https://static1.smartbear.co/swagger/media/assets/swagger_fav.png
+// @match        *://*/docs/index.html
+// @match        *://*/docs/api/index.html
+// @grant        none
+// ==/UserScript==
+
+; (() => {
+    // @require      file:///Users/test/projects/greasy_monkey_scripts/swagger_toolkit.js
     const TIMES = 30
     let current = 0
     let isLoaded = false
@@ -58,6 +71,7 @@
                 --body-wrapper-width: 80vw;
                 --body-wrapper-margin-right: 3vw;
                 --body-wrapper-min-width: 800px;
+                --body-btn-group-width: 20px;
             }
 
             /* 页面内容主体布局 */
@@ -95,9 +109,13 @@
             #swagger-toolkit-sidebar .row.method-PATCH { background-color: rgba(80,227,194,.1); }
             #swagger-toolkit-sidebar .row.method-PATCH:hover { background-color: rgba(80,227,194,.5); }
 
-            #swagger-toolkit-sidebar .row .description { color: #333; font-size: 14px; width: var(--row-width); min-width: var(--row-min-width); }
+            #swagger-toolkit-sidebar .row .description { color: #333; font-size: 14px; width: calc(var(--row-width) - var(--body-btn-group-width)); min-width: calc(var(--row-min-width) - var(--body-btn-group-width)); }
             #swagger-toolkit-sidebar .row .method { display: flex; line-height: 45px; min-width: 64px; }
             #swagger-toolkit-sidebar .row .path > a { color: #409EFF; }
+
+            #swagger-toolkit-sidebar .row .btn-group { font-size: 12px; }
+            #swagger-toolkit-sidebar .row .btn-group > a { text-decoration: none; display: block; }
+            #swagger-toolkit-sidebar .row .btn-group > a:hover { font-size: 14px; }
 
             /* helper */
             .tool-text-size-fixed { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -133,6 +151,11 @@
             if (data.length > LinkStore.MAX_LENGTH) data = data.slice(0, LinkStore.MAX_LENGTH)
             localStorage.setItem(key, JSON.stringify(data))
         }
+        static remove(key, index) {
+            let data = LinkStore.getStore(key)
+            data.splice(index, 1)
+            localStorage.setItem(key, JSON.stringify(data))
+        }
         static getStore(key) {
             let store = []
             try {
@@ -149,11 +172,17 @@
         localKey = null
         title = null
         placeholder = '暂无数据'
+        enableMarkBtn = false
+        /**
+         * 生成或更新当前 Pane
+         * @description 将生成 `.list>(header>.title)+(a.row>(.method+.contents>(.description+a.path)))`
+         */
         generateDom(isUpdate) {
             if (isUpdate) this.dom.innerHTML = ''
             const list = isUpdate ? this.dom : document.createElement('div')
             list.classList.add('list')
             list.classList.add(this.localKey)
+            list.setAttribute('data-key', this.localKey)
             // 添加 header
             const header = document.createElement('header')
             const title = document.createElement('div')
@@ -166,6 +195,7 @@
             for (const dataRow of data) {
                 const row = document.createElement('a')
                 row.href = '#' + dataRow.id
+                row.setAttribute('data-row', JSON.stringify(dataRow))
                 const method = document.createElement('div')
                 method.innerText = dataRow.method
                 const contents = document.createElement('div')
@@ -176,10 +206,16 @@
                 pathLink.innerText = dataRow.path
                 pathLink.href = '#' + dataRow.id
                 const btnGroup = document.createElement('div')
-                const markBtn = document.createElement('div')
-                markBtn.innerText = '⭐️'
-                const deleteBtn = document.createElement('div')
-                deleteBtn.innerText = '❌'
+                const markBtn = document.createElement('a')
+                if (this.enableMarkBtn) {
+                    markBtn.href = 'javascript:;'
+                    markBtn.setAttribute('title', '收藏')
+                    markBtn.innerText = '⭐️'
+                }
+                const deleteBtn = document.createElement('a')
+                deleteBtn.href = 'javascript:;'
+                deleteBtn.setAttribute('title', '删除')
+                deleteBtn.innerText = '✖️'
 
                 row.classList.add('row')
                 row.classList.add('method-' + dataRow.method)
@@ -189,17 +225,17 @@
                 description.classList.add('tool-text-size-fixed')
                 path.classList.add('path')
                 btnGroup.classList.add('btn-group')
-                markBtn.classList.add('btn-mark')
+                if (this.enableMarkBtn) markBtn.classList.add('btn-mark')
                 deleteBtn.classList.add('btn-delete')
 
                 path.appendChild(pathLink)
                 contents.appendChild(description)
                 contents.appendChild(path)
-                // contents.appendChild(btnGroup)
-                // btnGroup.appendChild(markBtn)
-                // btnGroup.appendChild(deleteBtn)
                 // row.appendChild(method)
                 row.appendChild(contents)
+                row.appendChild(btnGroup)
+                btnGroup.appendChild(deleteBtn)
+                if (this.enableMarkBtn) btnGroup.appendChild(markBtn)
                 list.appendChild(row)
             }
             if (data.length === 0) list.appendChild(this.getPlaceholderDom())
@@ -217,11 +253,12 @@
         localKey = 'swagger-toolkit-history'
         title = '浏览历史'
         placeholder = '暂无浏览历史数据'
+        enableMarkBtn = true
     }
     class MarkPane extends Pane {
         localKey = 'swagger-toolkit-mark'
-        title = '收藏'
-        placeholder = '暂无收藏数据, 点击收藏按钮添加'
+        title = '收藏夹'
+        placeholder = '暂无收藏数据, 点击 ⭐️ 按钮添加'
         afterGenerageDom() {
             this.dom
         }
@@ -260,10 +297,40 @@
                 pane.generateDom(true)
             }
         }
+        appendPanesListeners() {
+            SideBar.dom.addEventListener('click', evt => {
+                if (evt.target.classList.contains('btn-delete')) {
+                    evt.preventDefault()
+                    evt.stopPropagation()
+                    const index = this._getRowIndex({ btnItem: evt.target })
+                    const key = evt.target.parentNode.parentNode.parentNode.getAttribute('data-key')
+                    LinkStore.remove(key, index)
+                    this._updatePane(key)
+                } else if (evt.target.classList.contains('btn-mark')) {
+                    evt.preventDefault()
+                    evt.stopPropagation()
+                    const row = evt.target.parentNode.parentNode.getAttribute('data-row')
+                    LinkStore.add('swagger-toolkit-mark', JSON.parse(row))
+                    this._updatePane('swagger-toolkit-mark')
+                }
+            })
+        }
+        _getRowIndex({ btnItem }) {
+            const listDom = Array.from(btnItem.parentNode.parentNode.parentNode.children)
+            for (let index = listDom.length; index--;) {
+                if (listDom[index] === btnItem.parentNode.parentNode) return index - 1
+            }
+            return -1
+        }
     }
     Sheets.inject()
     SideBar.panes.push(new HistoryPane())
     SideBar.panes.push(new MarkPane())
     window.$$_SideBar = new SideBar()
-    window.$$_SideBar.addListeners().generateDom().appendPanes().inject()
+    window.$$_SideBar
+        .addListeners()
+        .generateDom()
+        .appendPanes()
+        .inject()
+        .appendPanesListeners()
 })();
