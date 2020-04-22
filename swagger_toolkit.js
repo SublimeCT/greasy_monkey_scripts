@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Swagger Toolkit
-// @namespace    https://github.com/SublimeCT
+// @namespace    https://github.com/SublimeCT/greasy_monkey_scripts
 // @version      1.0.0
 // @description  Swagger 站点工具脚本 💪 | 保存浏览历史 🕘 | 显示收藏夹 ⭐️ | 点击 path 快速定位 🎯
+// @note         v1.0.1 增加当前页是不是 swagger 构建的文档判断; 自动展开所有 tag, 以定位到对应的 API;
 // @author       Sven
 // @icon         https://static1.smartbear.co/swagger/media/assets/swagger_fav.png
 // @match        *://*/docs/index.html
@@ -21,9 +22,16 @@
             clearInterval(interval)
             return
         }
-        const item = document.querySelector('.opblock-summary')
-        if (!item) return
+        const item = document.querySelector('.opblock-tag')
+        const swaggerAPI = window.SwaggerUIBundle
+        if (!item || !swaggerAPI) return
         if (!isLoaded) {
+            // 首先展开所有 tag, 否则无法定位
+            const notOpenTags = document.querySelectorAll('.opblock-tag[data-is-open=false]') || []
+            for (const tag of Array.from(notOpenTags)) {
+                tag.click()
+            }
+            // 增加监听事件
             const wrapper = document.querySelector('.swagger-ui')
             wrapper.addEventListener('click', evt => {
                 // 点击接口标题时在当前 URL 中加入锚点
@@ -145,8 +153,13 @@
             store.description = row.querySelector('.opblock-summary-description').innerText
             LinkStore.add(key, store)
         }
-        static add(key, store) {
+        static add(key, store, filterRepeat) {
             let data = LinkStore.getStore(key)
+            if (filterRepeat) {
+                for (const row of data) {
+                    if (row.id === store.id && store.path === store.path) return false
+                }
+            }
             data.unshift(store)
             if (data.length > LinkStore.MAX_LENGTH) data = data.slice(0, LinkStore.MAX_LENGTH)
             localStorage.setItem(key, JSON.stringify(data))
@@ -311,7 +324,7 @@
                     evt.preventDefault()
                     evt.stopPropagation()
                     const row = evt.target.parentNode.parentNode.getAttribute('data-row')
-                    LinkStore.add('swagger-toolkit-mark', JSON.parse(row))
+                    LinkStore.add('swagger-toolkit-mark', JSON.parse(row), true)
                     this._updatePane('swagger-toolkit-mark')
                 }
             })
