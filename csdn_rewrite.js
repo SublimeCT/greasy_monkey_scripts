@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.7
+// @version      2.5.8
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -25,6 +25,7 @@
 // @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
 // @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
 // @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
+// @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -170,7 +171,7 @@
             BackgroundImageRange,
             options: [],
             launch() {
-                console.log(`%c[${window.$CSDNCleaner.NAME}] 感谢支持, 欢迎反馈: https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback`, 'color: teal')
+                console.log(`%c[${window.$CSDNCleaner.NAME}] 感谢支持, 欢迎反馈: https://greasyfork.org/zh-CN/scripts/373457/feedback`, 'color: teal')
                 window.addEventListener('DOMContentLoaded', window.$CSDNCleaner.onLoad)
                 return this
             },
@@ -193,7 +194,7 @@
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -201,6 +202,22 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    /* 评论区每行增加 hover 效果 | 2020-05-17 18:32:22 */
+                    .comment-box { background-color: rgba(255,255,255,0.9); }
+                    .comment-list-box { padding: 0 !important; }
+                    .comment-list-box > .comment-list { padding: 0 24px; margin-top: 0 !important; padding-top: 16px }
+                    .comment-list-box > .comment-list:hover { background-color: rgba(255,255,255,0.7); }
+                    /* 屏蔽固定在页面底部的 toolbox | 2020-05-17 18:28:03 */
+                    .more-toolbox > .left-toolbox { position: relative !important; }
+                    /* 底部作者信息右侧按钮只显示关注 | 2020-05-17 18:26:52 */
+                    .right-message > a:not(.personal-watch) { display: none; }
+                    /* 评论区输入框交叉轴对齐 | 2020-05-17 18:25:54 */
+                    .comment-edit-box { display: flex; align-items: center; }
+                    /* 原文链接样式 | 2020-05-17 17:41:11 */
+                    .source-link-wrapper { display: inline-block; vertical-align: top; }
+                    .source-link-wrapper > .source-link-icon { margin-right: 5px; }
+                    .source-link-wrapper > .source-link-label {  }
+                    .source-link-wrapper > .source-link-link:hover { color: #008eff !important; }
                     /* 防止网页主体内容被黑白处理, 适用于特殊日期; CSDN 真是太蠢了，只有 CSDN 把文章内容中的图片都显示成黑白的了, 严重影响阅读! | 2020-04-04 13:17:48 */
                     html { filter: grayscale(0) !important; }
                     /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
@@ -272,7 +289,6 @@
                         width: 100%;
                         height: 100%;
                         display: flex;
-                        opacity: 0.9;
                         justify-content: center;
                     }
                     #setting-dialog section header {
@@ -286,8 +302,8 @@
                         padding: 0 15px;
                         align-items: center;
                     }
-                    #setting-dialog section header .icon-close {
-                        color: red;
+                    #setting-dialog section header .icon-close > img {
+                        width: 20px;
                         cursor: pointer;
                     }
                     #setting-dialog section article .row {
@@ -357,9 +373,9 @@
                         max-height: 520px;
                         min-height: 370px;
                         /* overflow: auto; */
-                        background-color: #EEE;
+                        background-color: #FFF;
                         border-radius: 5px;
-                        border: 2px solid #DDD;
+                        border: 2px solid #EEE;
                     }
                     /* 自定义补充样式 */
                     .display-none {display: none !important;}
@@ -395,6 +411,7 @@
                 window.$CSDNCleaner._loadSettings()
                 window.$CSDNCleaner.cleanCopy() // 解禁复制功能
                 window.$CSDNCleaner._launchPagintion() // 解禁并初始化分页组件
+                window.$CSDNCleaner.showSourceLink() // 转载的文章显示原文链接
             },
             _launchPagintion() {
                 // 监听数据层变动并动态控制分页组件显示
@@ -443,7 +460,9 @@
                     <section>
                         <header>
                             <div>设置 - [${this.NAME}]</div>
-                            <div class="icon-close">关闭</div>
+                            <div class="icon-close">
+                                <img src="https://csdnimg.cn//cdn/content-toolbar/guide-close-btn.png">
+                            </div>
                         </header>
                         <article>
                             <div class="row">
@@ -583,6 +602,70 @@
                 option.appendChild(optionName)
                 option.appendChild(imgNode)
                 return option
+            },
+            _sourceLinkKeywords: ['转载自', '转自', '原文'],
+            _getSourceLink (row) {
+                for (const keyword of this._sourceLinkKeywords) {
+                    if (row.indexOf(keyword) === -1) continue
+                    // 1. 尝试从 <a> 标签中获取链接
+                    const attrMatchRes = row.match(/href="(.*)"/)
+                    const attr = attrMatchRes && attrMatchRes[1]
+                    if (attr) return attr
+                    // 2. 尝试获取整段链接内容
+                    const partMatchRes = row.replace(/<\/?[\w|\d]+>/g, '').match(/(https?:\/\/.*)\s?.*$/)
+                    const part = partMatchRes && partMatchRes[1]
+                    if (part) return part
+                }
+            },
+            showSourceLink() {
+                const sourceDom = document.querySelector('.article-source-link')
+                let sourceLink = ''
+                if (sourceDom) { // 从顶部折叠面板中获取
+                    console.log(sourceDom.innerText, sourceDom.innerText.indexOf('本文链接'))
+                    if (sourceDom.innerText.indexOf('本文链接') >= 0) return
+                    const linkDom = sourceDom.querySelector('a')
+                    sourceLink = linkDom && linkDom.innerText
+                } else {
+                    // 从文中匹配, 从文末取 _sourceLinkCheckLineSize 行, 若包含 _sourceLinkKeywords 中的内容则使用正则匹配该行中包含的链接
+                    const articleRaw = document.getElementById('article_content').innerHTML
+                    const articleLastLines = articleRaw.split('\n')
+                    // 倒序遍历, 优先取文末的原文链接
+                    for (const row of articleLastLines) {
+                        const link = this._getSourceLink(row)
+                        if (link) {
+                            sourceLink = link
+                            break
+                        }
+                    }
+                }
+                if (!sourceLink) return
+                this.appendSourceLinkDom(sourceLink)
+                console.log(`%c[${window.$CSDNCleaner.NAME}] 当前文章可能是转载的, 匹配到原文链接: ${sourceLink}`, 'color: teal')
+            },
+            appendSourceLinkDom(link) {
+                const sourceLinkLabelWrapperDom = document.createElement('div')
+                const sourceLinkIconDom = document.createElement('img')
+                const sourceLinkLabelDom = document.createElement('span')
+                const sourceLinkLinkDom = document.createElement('a')
+                sourceLinkLabelWrapperDom.classList.add('source-link-wrapper')
+                sourceLinkIconDom.classList.add('article-heard-img')
+                sourceLinkIconDom.classList.add('source-link-icon')
+                sourceLinkIconDom.setAttribute('src', 'https://csdnimg.cn/release/phoenix/template/new_img/shareWhite.png')
+                sourceLinkLabelDom.classList.add('source-link-label')
+                sourceLinkLabelDom.innerText = '转载自:'
+                sourceLinkLinkDom.classList.add('follow-nickName')
+                sourceLinkLinkDom.classList.add('source-link-link')
+                sourceLinkLinkDom.innerText = link
+                sourceLinkLinkDom.setAttribute('href', link)
+                sourceLinkLinkDom.setAttribute('target', '_blank')
+
+                sourceLinkLabelWrapperDom.appendChild(sourceLinkIconDom)
+                sourceLinkLabelWrapperDom.appendChild(sourceLinkLabelDom)
+                sourceLinkLabelWrapperDom.appendChild(sourceLinkLinkDom)
+                // 插入页面中
+                const wrapper = document.querySelector('.bar-content')
+                console.log(wrapper)
+                if (wrapper) wrapper.appendChild(sourceLinkLabelWrapperDom)
             }
         }
         window.$CSDNCleaner.init()
