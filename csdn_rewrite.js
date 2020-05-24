@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.8
+// @version      2.5.9
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -26,6 +26,7 @@
 // @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
 // @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
 // @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
+// @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -94,7 +95,8 @@
                 categorys: [],          // 类目集合
                 imgs: [],               // 图片集合
                 customUrl: '',          // 自定义链接
-                defaultHideMenu: false  // 默认是否隐藏设置按钮
+                defaultHideMenu: false, // 默认是否隐藏设置按钮
+                showSourceLink: true,   // 是否匹配原文链接
             },
             init() {
                 const range = Toolkit.getValue('background_ranges')
@@ -164,6 +166,9 @@
                 if (!menu || !menu.classList) return
                 const method = window.$CSDNCleaner.BackgroundImageRange.range.defaultHideMenu ? 'add' : 'remove'
                 menu.classList[method]('defaultHideMenu')
+            },
+            getSourceLinkDisplay() {
+                return this.range.showSourceLink ? 'inline-block' : 'none'
             }
         }
         window.$CSDNCleaner = {
@@ -177,6 +182,7 @@
             },
             init() {
                 BackgroundImageRange.init() // 从本地存储中获取配置
+                console.log(BackgroundImageRange.range)
                 window.$CSDNCleaner
                     .initSettings() // 初始化按钮组
                     .appendSheets() // 添加样式
@@ -188,13 +194,14 @@
                 const sheets = `
                     body {
                         --comments-avatar-size: 50px;
+                        --source-link-wrapper-display: ${window.$CSDNCleaner.BackgroundImageRange.getSourceLinkDisplay()};
                     }
                     body:not(.clean-mode) { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -203,7 +210,7 @@
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
                     /* 评论区每行增加 hover 效果 | 2020-05-17 18:32:22 */
-                    .comment-box { background-color: rgba(255,255,255,0.9); }
+                    .comment-box { background-color: rgba(255,255,255,0.9) !important; }
                     .comment-list-box { padding: 0 !important; }
                     .comment-list-box > .comment-list { padding: 0 24px; margin-top: 0 !important; padding-top: 16px }
                     .comment-list-box > .comment-list:hover { background-color: rgba(255,255,255,0.7); }
@@ -214,9 +221,18 @@
                     /* 评论区输入框交叉轴对齐 | 2020-05-17 18:25:54 */
                     .comment-edit-box { display: flex; align-items: center; }
                     /* 原文链接样式 | 2020-05-17 17:41:11 */
-                    .source-link-wrapper { display: inline-block; vertical-align: top; }
+                    .source-link-wrapper { display: var(--source-link-wrapper-display); vertical-align: top; }
                     .source-link-wrapper > .source-link-icon { margin-right: 5px; }
-                    .source-link-wrapper > .source-link-label {  }
+                    .source-link-wrapper > .source-link-label { }
+                    .source-link-wrapper > .source-link-link {
+                        display: inline-block;
+                        overflow: hidden;
+                        text-overflow:ellipsis;
+                        white-space: nowrap;
+                        width: 20vw;
+                        max-width: 30vw;
+                        min-width: 15vw;
+                    }
                     .source-link-wrapper > .source-link-link:hover { color: #008eff !important; }
                     /* 防止网页主体内容被黑白处理, 适用于特殊日期; CSDN 真是太蠢了，只有 CSDN 把文章内容中的图片都显示成黑白的了, 严重影响阅读! | 2020-04-04 13:17:48 */
                     html { filter: grayscale(0) !important; }
@@ -374,7 +390,7 @@
                         min-height: 370px;
                         /* overflow: auto; */
                         background-color: #FFF;
-                        border-radius: 5px;
+                        /* border-radius: 5px; */
                         border: 2px solid #EEE;
                     }
                     /* 自定义补充样式 */
@@ -415,6 +431,7 @@
             },
             _launchPagintion() {
                 // 监听数据层变动并动态控制分页组件显示
+                if (!csdn.comments) return
                 Object.defineProperty(csdn.comments, 'pageCount', {
                     get() { return this._$pageCount || 1 },
                     set(v) {
@@ -487,6 +504,20 @@
                                     <button type="button" id="btn-use-current">使用当前图片</button>
                                 </div>
                             </div>
+                            <div class="row" id="showSourceLink-wrap">
+                                <label>是否显示原文链接: </label>
+                                <div class="tips-line">原文链接从顶部文章信息或原文中提取, 若作者直接文中写入原文链接(未在文章信息中标注), 有可能会匹配错误</div>
+                                <div class="content">
+                                    <label style="margin-right: 15px;">
+                                        <input type="radio" value="0" ${BackgroundImageRange.range.showSourceLink ? '' : 'checked'} class="radio-showSourceLink" name="showSourceLink" />
+                                        <span>隐藏</span>
+                                    </label>
+                                    <label style="margin-right: 15px;">
+                                        <input type="radio" value="1" ${BackgroundImageRange.range.showSourceLink ? 'checked' : ''} class="radio-showSourceLink" name="showSourceLink" />
+                                        <span>显示</span>
+                                    </label>
+                                </div>
+                            </div>
                             <div class="row" id="defaultHideMenu-wrap">
                                 <label>是否隐藏设置(小齿轮)按钮: </label>
                                 <div class="tips-line">隐藏之后设置(小齿轮)按钮会与回到顶部按钮同步显示和隐藏</div>
@@ -529,9 +560,10 @@
                 const saveCurrentImgBtn = document.getElementById('btn-use-current')
                 const clearUrlBtn = document.getElementById('btn-clear-bg')
                 const hideMenuWrap = document.getElementById('defaultHideMenu-wrap')
+                const showSourceLinkWrap = document.getElementById('showSourceLink-wrap')
                 if (!dialogWrapper) { console.error(`[${window.$CSDNCleaner.NAME}] Internal error. dialog init failed.`); return }
                 dialogWrapper.addEventListener('click', evt => {
-                    if (evt.target.id === 'setting-dialog' || evt.target.classList.contains('icon-close')) { // 关闭弹窗
+                    if (evt.target.id === 'setting-dialog' || evt.target.classList.contains('icon-close') || evt.target.parentNode.classList.contains('icon-close')) { // 关闭弹窗
                         window.$CSDNCleaner.toggleDialog()
                     } else if (evt.target.classList.contains('category')) { // 选择背景图片类目
                         const key = evt.target.attributes.getNamedItem('data-key').value
@@ -584,6 +616,15 @@
                     urlInput.defaultHideMenu = BackgroundImageRange.range.defaultHideMenu = val
                     BackgroundImageRange.save()
                 })
+                showSourceLinkWrap.addEventListener('change', evt => {
+                    const dom = evt.target
+                    if (!dom || !dom.classList || !dom.classList.contains('radio-showSourceLink')) return
+                    const val = !!Number(dom.value)
+                    console.log('>>>', val, urlInput.showSourceLink, dom)
+                    BackgroundImageRange.range.showSourceLink = val
+                    document.body.style.setProperty('--source-link-wrapper-display', window.$CSDNCleaner.BackgroundImageRange.getSourceLinkDisplay())
+                    BackgroundImageRange.save()
+                })
             },
             toggleDialog() {
                 const dialog = document.getElementById('setting-dialog')
@@ -603,7 +644,7 @@
                 option.appendChild(imgNode)
                 return option
             },
-            _sourceLinkKeywords: ['转载自', '转自', '原文'],
+            _sourceLinkKeywords: ['转载自', '转自', '原文地址', '原文链接', '转载地址', '转载链接', '原文:', '原文：'],
             _getSourceLink (row) {
                 for (const keyword of this._sourceLinkKeywords) {
                     if (row.indexOf(keyword) === -1) continue
@@ -627,6 +668,7 @@
                     sourceLink = linkDom && linkDom.innerText
                 } else {
                     // 从文中匹配, 从文末取 _sourceLinkCheckLineSize 行, 若包含 _sourceLinkKeywords 中的内容则使用正则匹配该行中包含的链接
+                    if (!document.getElementById('article_content')) return false
                     const articleRaw = document.getElementById('article_content').innerHTML
                     const articleLastLines = articleRaw.split('\n')
                     // 倒序遍历, 优先取文末的原文链接
