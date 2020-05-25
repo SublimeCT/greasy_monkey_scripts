@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.9
+// @version      2.5.10
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -27,6 +27,7 @@
 // @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
 // @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
 // @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
+// @note         v2.5.10 修复在内容区时显示横向滚动条的问题, 修复原文链接的贪婪匹配(href)问题
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @include      https://bbs.csdn.net/topics/*
@@ -215,7 +216,7 @@
                     .comment-list-box > .comment-list { padding: 0 24px; margin-top: 0 !important; padding-top: 16px }
                     .comment-list-box > .comment-list:hover { background-color: rgba(255,255,255,0.7); }
                     /* 屏蔽固定在页面底部的 toolbox | 2020-05-17 18:28:03 */
-                    .more-toolbox > .left-toolbox { position: relative !important; }
+                    .more-toolbox > .left-toolbox { position: relative !important; left: 0 !important; }
                     /* 底部作者信息右侧按钮只显示关注 | 2020-05-17 18:26:52 */
                     .right-message > a:not(.personal-watch) { display: none; }
                     /* 评论区输入框交叉轴对齐 | 2020-05-17 18:25:54 */
@@ -649,7 +650,7 @@
                 for (const keyword of this._sourceLinkKeywords) {
                     if (row.indexOf(keyword) === -1) continue
                     // 1. 尝试从 <a> 标签中获取链接
-                    const attrMatchRes = row.match(/href="(.*)"/)
+                    const attrMatchRes = row.match(/href="(.*?)"/)
                     const attr = attrMatchRes && attrMatchRes[1]
                     if (attr) return attr
                     // 2. 尝试获取整段链接内容
@@ -662,10 +663,17 @@
                 const sourceDom = document.querySelector('.article-source-link')
                 let sourceLink = ''
                 if (sourceDom) { // 从顶部折叠面板中获取
-                    console.log(sourceDom.innerText, sourceDom.innerText.indexOf('本文链接'))
-                    if (sourceDom.innerText.indexOf('本文链接') >= 0) return
-                    const linkDom = sourceDom.querySelector('a')
-                    sourceLink = linkDom && linkDom.innerText
+                    let hasSourceLink = false
+                    for (const keyword of this._sourceLinkKeywords) {
+                        if (sourceDom.innerHTML.indexOf(keyword) !== -1) {
+                            hasSourceLink = true
+                            break
+                        }
+                    }
+                    if (hasSourceLink) {
+                        const linkDom = sourceDom.querySelector('a')
+                        if (linkDom) sourceLink = linkDom && linkDom.innerText
+                    }
                 } else {
                     // 从文中匹配, 从文末取 _sourceLinkCheckLineSize 行, 若包含 _sourceLinkKeywords 中的内容则使用正则匹配该行中包含的链接
                     if (!document.getElementById('article_content')) return false
@@ -699,6 +707,7 @@
                 sourceLinkLinkDom.classList.add('source-link-link')
                 sourceLinkLinkDom.innerText = link
                 sourceLinkLinkDom.setAttribute('href', link)
+                sourceLinkLinkDom.setAttribute('title', link)
                 sourceLinkLinkDom.setAttribute('target', '_blank')
 
                 sourceLinkLabelWrapperDom.appendChild(sourceLinkIconDom)
