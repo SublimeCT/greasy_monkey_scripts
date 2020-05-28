@@ -1,9 +1,11 @@
 // ==UserScript==
-// @name         Swagger Toolkit
+// @name         swagger-toolkit
 // @namespace    https://github.com/SublimeCT/greasy_monkey_scripts
-// @version      1.0.0
-// @description  Swagger 站点工具脚本 💪 | 保存浏览历史 🕘 | 显示收藏夹 ⭐️ | 点击 path 快速定位 🎯
+// @version      1.1.1
+// @description  Swagger 站点工具脚本 💪 | 保存浏览历史 🕘 | 显示收藏夹 ⭐️ | 点击 path 快速定位 🎯 | 快速复制 API path 🔗
 // @note         v1.0.1 增加当前页是不是 swagger 构建的文档判断; 自动展开所有 tag, 以定位到对应的 API;
+// @note         v1.1.0 增加复制 API path 功能
+// @note         v1.1.1 fix: 修复增加历史记录时将 toolkit-btn-group 内容一起加进去的问题
 // @author       Sven
 // @icon         https://static1.smartbear.co/swagger/media/assets/swagger_fav.png
 // @match        *://*/docs/index.html
@@ -82,6 +84,14 @@
                 --body-btn-group-width: 20px;
             }
 
+            /* 应用于 Copy input */
+            .toolkit-hidden { width: 1; height: 1; }
+
+            /* 接口信息部分样式 */
+            #swagger-ui .opblock .toolkit-path-btn-group { margin-left: 10px; display: none; }
+            #swagger-ui .opblock:hover .toolkit-path-btn-group { display: block; }
+            #swagger-ui .opblock .toolkit-path-btn-group a { text-decoration: none; }
+
             /* 页面内容主体布局 */
             #swagger-ui div.topbar { display: flex; justify-content: flex-end; }
             #swagger-ui div.topbar .wrapper { margin: 0; width: var(--body-wrapper-width); min-width: var(--body-wrapper-min-width); margin-right: var(--body-wrapper-margin-right) }
@@ -149,7 +159,7 @@
             store.id = row.id
             store.key = key
             store.method = row.querySelector('.opblock-summary-method').innerText
-            store.path = row.querySelector('.opblock-summary-path').innerText
+            store.path = row.querySelector('.opblock-summary-path > a').innerText
             store.description = row.querySelector('.opblock-summary-description').innerText
             LinkStore.add(key, store)
         }
@@ -279,6 +289,13 @@
     class SideBar {
         static dom = null
         static panes = []
+        static pathBtnGroupClassName = 'toolkit-path-btn-group'
+        static copyInput = document.createElement('input')
+        initCopyDOM() {
+            SideBar.copyInput.classList.add('toolkit-hidden')
+            document.body.appendChild(SideBar.copyInput)
+            return this
+        }
         addListeners() {
             window.addEventListener('hashchange', () => {
                 const _path = location.hash.length > 0 ? location.hash.substr(1) : ''
@@ -287,7 +304,44 @@
                 if (row) LinkStore.save(row, 'swagger-toolkit-history')
                 this._updatePane('swagger-toolkit-history')
             })
+            document.querySelector('#swagger-ui').addEventListener('mouseover', evt => {
+                this._showPathBtnGroup(evt) // 显示在 path 栏中的按钮组
+            })
             return this
+        }
+        _showPathBtnGroup(evt) {
+            const opblock = evt.target.closest('.opblock')
+            if (!opblock) return
+            this._appendPathBtnGroupDOM(opblock)
+        }
+        _appendPathBtnGroupDOM(opblock) {
+            if (opblock.querySelector('.' + SideBar.pathBtnGroupClassName)) return
+            const group = document.createElement('div')
+            const copyBtn = document.createElement('a')
+            group.classList.add(SideBar.pathBtnGroupClassName)
+            copyBtn.setAttribute('href', 'javascript:;')
+            copyBtn.classList.add('btn-copy')
+            copyBtn.innerText = '🔗'
+            copyBtn.setAttribute('title', 'copy')
+            group.appendChild(copyBtn)
+            copyBtn.addEventListener('click', evt => {
+                this._copyPath(evt)
+            })
+
+            const pathDOM = opblock.querySelector('.opblock-summary-path')
+            if (pathDOM) pathDOM.appendChild(group)
+        }
+        _copyPath(evt) {
+            evt.stopPropagation()
+            const pathDOM = evt.target.closest('.opblock-summary-path')
+            if (!pathDOM) return
+            const pathLink = pathDOM.querySelector('a')
+            if (!pathLink) return
+            const path = pathLink.innerText
+            SideBar.copyInput.value = path
+            SideBar.copyInput.select()
+            document.execCommand('Copy')
+            console.log('copy successfuly')
         }
         generateDom() {
             const sidebar = document.createElement('sidebar')
@@ -342,6 +396,7 @@
     SideBar.panes.push(new MarkPane())
     window.$$_SideBar = new SideBar()
     window.$$_SideBar
+        .initCopyDOM()
         .addListeners()
         .generateDom()
         .appendPanes()
