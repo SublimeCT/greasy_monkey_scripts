@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         swagger-toolkit
 // @namespace    https://github.com/SublimeCT/greasy_monkey_scripts
-// @version      1.1.1
+// @version      1.2.0
 // @description  Swagger 站点工具脚本 💪 | 保存浏览历史 🕘 | 显示收藏夹 ⭐️ | 点击 path 快速定位 🎯 | 快速复制 API path 🔗
+// @description:en  Swagger Toolkit Script 💪 | save history in sidebar 🕘 | has favorites list in sidebar ⭐️ | click path(in sidebar) to jump 🎯 | copy(hover API) API path 🔗
 // @note         v1.0.1 增加当前页是不是 swagger 构建的文档判断; 自动展开所有 tag, 以定位到对应的 API;
 // @note         v1.1.0 增加复制 API path 功能
 // @note         v1.1.1 fix: 修复增加历史记录时将 toolkit-btn-group 内容一起加进去的问题
+// @note         v1.2.0 feat: 增加多语言(英语)支持
 // @author       Sven
 // @icon         https://static1.smartbear.co/swagger/media/assets/swagger_fav.png
 // @match        *://*/docs/index.html
@@ -195,6 +197,11 @@
         localKey = null
         title = null
         placeholder = '暂无数据'
+        placeholder_en = 'no data'
+        btnSave = '收藏'
+        btnSave_en = 'add to favorites'
+        btnRemove = '删除'
+        btnRemove_en = 'remove'
         enableMarkBtn = false
         /**
          * 生成或更新当前 Pane
@@ -210,7 +217,7 @@
             const header = document.createElement('header')
             const title = document.createElement('div')
             title.classList.add('title')
-            title.innerText = this.title
+            title.innerText = this.getLabelByLanguage('title')
             list.appendChild(header)
             header.appendChild(title)
             // 添加数据
@@ -232,12 +239,12 @@
                 const markBtn = document.createElement('a')
                 if (this.enableMarkBtn) {
                     markBtn.href = 'javascript:;'
-                    markBtn.setAttribute('title', '收藏')
+                    markBtn.setAttribute('title', this.getLabelByLanguage('btnSave'))
                     markBtn.innerText = '⭐️'
                 }
                 const deleteBtn = document.createElement('a')
                 deleteBtn.href = 'javascript:;'
-                deleteBtn.setAttribute('title', '删除')
+                deleteBtn.setAttribute('title', this.getLabelByLanguage('btnRemove'))
                 deleteBtn.innerText = '✖️'
 
                 row.classList.add('row')
@@ -268,20 +275,32 @@
         }
         getPlaceholderDom() {
             const dom = document.createElement('section')
-            dom.innerText = this.placeholder
+            dom.innerText = this.getLabelByLanguage('placeholder')
             return dom
+        }
+        getLabelByLanguage(field, language) {
+            let lang = language
+            if (!lang) {
+                const _lang = navigator.language
+                lang = _lang.indexOf('zh') === 0 ? '' : 'en'
+            }
+            return this[`${field}${lang ? ('_' + lang) : '' }`]
         }
     }
     class HistoryPane extends Pane {
         localKey = 'swagger-toolkit-history'
         title = '浏览历史'
+        title_en = 'History'
         placeholder = '暂无浏览历史数据'
+        placeholder_en = 'No history at present'
         enableMarkBtn = true
     }
     class MarkPane extends Pane {
         localKey = 'swagger-toolkit-mark'
         title = '收藏夹'
+        title_en = 'Favorites'
         placeholder = '暂无收藏数据, 点击 ⭐️ 按钮添加'
+        placeholder_en = 'No favorite data, click ⭐️ button to add'
         afterGenerageDom() {
             this.dom
         }
