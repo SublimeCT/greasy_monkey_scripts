@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.5.10
+// @version      2.6.0
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -28,8 +28,10 @@
 // @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
 // @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
 // @note         v2.5.10 修复在内容区时显示横向滚动条的问题, 修复原文链接的贪婪匹配(href)问题
+// @note         v2.6.0  增加纯色背景设置功能, 引入 a color picker 组件; 增加刷新背景图片功能; 增加设置弹窗内按钮样式
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
+// @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
 // @include      https://bbs.csdn.net/topics/*
 // @include      https://*.iteye.com/blog/*
 // @include      https://*.iteye.com/news/*
@@ -96,6 +98,7 @@
                 categorys: [],          // 类目集合
                 imgs: [],               // 图片集合
                 customUrl: '',          // 自定义链接
+                bgColor: '',            // 纯色背景
                 defaultHideMenu: false, // 默认是否隐藏设置按钮
                 showSourceLink: true,   // 是否匹配原文链接
             },
@@ -170,6 +173,17 @@
             },
             getSourceLinkDisplay() {
                 return this.range.showSourceLink ? 'inline-block' : 'none'
+            },
+            setBgColor(color) {
+                this.range.bgColor = color || ''
+                this.save()
+                document.body.style.setProperty('--background-color', color || '#EAEAEA')
+                this.updateBgImage(null, !!color)
+            },
+            updateBgImage(url, disabled) {
+                let imgUrl = url || window.$CSDNCleaner.BackgroundImageRange.getImgUrl()
+                if (imgUrl.indexOf('url(') === -1) imgUrl = `url(${imgUrl})`
+                document.body.style.setProperty('--background-image', disabled ? 'none' : imgUrl)
             }
         }
         window.$CSDNCleaner = {
@@ -192,12 +206,20 @@
             },
             // 生成 sheets
             _getSheets() {
+                // 若设置了背景色, 则使用纯色, 否则使用自定义图片或随机图片背景
+                const bgColor = window.$CSDNCleaner.BackgroundImageRange.range.bgColor
+                const imgUrl = window.$CSDNCleaner.BackgroundImageRange.getImgUrl()
+                // const backgroundSheets = bgColor
+                //     ? `background-color: var(--background-color) !important; background-image: none;`
+                //     : `background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()};`
                 const sheets = `
                     body {
                         --comments-avatar-size: 50px;
                         --source-link-wrapper-display: ${window.$CSDNCleaner.BackgroundImageRange.getSourceLinkDisplay()};
+                        --background-color: ${bgColor || '#EAEAEA'};
+                        --background-image: ${bgColor ? 'none' : imgUrl};
                     }
-                    body:not(.clean-mode) { background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()} !important; background-color:#EAEAEA !important; background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
+                    body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image); background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
@@ -326,9 +348,18 @@
                     #setting-dialog section article .row {
                         margin-bottom: 10px;
                     }
+                    #setting-dialog section article .row .color-picker-box {
+                        margin-bottom: 10px;
+                    }
                     #setting-dialog section article .row > label {
                         font-weight: bold;
                     }
+                    #setting-dialog section article button { color: #409EFF; background-color: #FAFAFA; padding: 4px; margin: 2.5px; border: 1px solid: #EEE; border-radius: 3px; }
+                    #setting-dialog section article button:hover { background-color: #EEE; }
+                    #setting-dialog section article button#btn-clear-bg { color: #F56C6C; }
+                    #setting-dialog section article button#btn-clear-bgColor { color: #F56C6C; }
+                    #setting-dialog section article button#btn-update-bg { color: #E6A23C; }
+                    /* #setting-dialog section article button#btn-use-current { color: #909399; } */
                     /* 链接输入框 */
                     #custom-bg-url {
                         width: 100%;
@@ -421,7 +452,7 @@
             },
             onLoad() {
                 // 图片下的底色
-                document.body.setAttribute('style', 'background-color:#EAEAEA !important')
+                // document.body.setAttribute('style', 'background-color:#EAEAEA !important')
                 // 解除跳转拦截
                 $ && $("#content_views") && $("#content_views").off('click')
                 // 初始化右侧 bottom menu tool bar
@@ -429,6 +460,7 @@
                 window.$CSDNCleaner.cleanCopy() // 解禁复制功能
                 window.$CSDNCleaner._launchPagintion() // 解禁并初始化分页组件
                 window.$CSDNCleaner.showSourceLink() // 转载的文章显示原文链接
+                window.$CSDNCleaner.loadColorPicker() // 加载 color picker
             },
             _launchPagintion() {
                 // 监听数据层变动并动态控制分页组件显示
@@ -474,6 +506,9 @@
                 settingDialog.classList.add('display-none')
                 const categorys = BackgroundImageRange.toCategoryHTML()
                 const { url, name, category } = window.$CSDNCleaner.BackgroundImageRange.currentUrl
+                const currentBackgroundHTML = window.$CSDNCleaner.BackgroundImageRange.range.bgColor
+                    ? `<span>${window.$CSDNCleaner.BackgroundImageRange.range.bgColor}</span>`
+                    : `<a class="link" target="_blank" href="${url}">${category ? '<' + category + '> ' : ''}${name}</a>`
                 settingDialog.innerHTML = `
                     <section>
                         <header>
@@ -486,7 +521,7 @@
                             <div class="row">
                                 <label>当前背景图: </label>
                                 <div class="content">
-                                    <a class="link" target="_blank" href="${url}">${category ? '<' + category + '> ' : ''}${name}</a>
+                                    ${currentBackgroundHTML}
                                 </div>
                             </div>
                             <div class="row">
@@ -500,10 +535,26 @@
                                 <div class="tips-line">您可以选择上传百度首页自定义背景图片, 然后将链接填入</div>
                                 <div class="content">
                                     <input id="custom-bg-url" value="${BackgroundImageRange.range.customUrl}"/>
+                                    <button type="reset" id="btn-update-bg">刷新背景图片</button>
                                     <button type="reset" id="btn-clear-bg">清除</button>
                                     <button type="button" id="btn-save-bg">保存</button>
                                     <button type="button" id="btn-use-current">使用当前图片</button>
                                 </div>
+                            </div>
+                            <div class="row">
+                                <label>纯色背景(优先使用): </label>
+                                <div class="color-picker-box">
+                                    <div class="tips-line">
+                                        <span>优先级高于自定义图片, 选择纯色背景将覆盖已添加的背景图片链接</span>
+                                        <button type="reset" id="btn-clear-bgColor">清除</button>
+                                    </div>
+                                    <div class="content">
+                                        <div class="color-picker-container"
+                                            acp-palette="PALETTE_MATERIAL_CHROME"
+                                            acp-palette-editable
+                                            acp-color="${BackgroundImageRange.range.bgColor}"></div>
+                                    </div>
+                                </div
                             </div>
                             <div class="row" id="showSourceLink-wrap">
                                 <label>是否显示原文链接: </label>
@@ -542,7 +593,7 @@
                                     </div>
                                 </div>
                                 <div class="content">
-                                    <div class="tips-line">问题/反馈:</div>
+                                    <div class="tips-line">反馈:</div>
                                     <div class="tips-line">
                                         <a class="link" href="https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback" target="_blank">greasy fork page</a>
                                     </div>
@@ -558,6 +609,8 @@
                 const dialogWrapper = document.getElementById('setting-dialog')
                 const urlInput = document.getElementById('custom-bg-url')
                 const saveUrlBtn = document.getElementById('btn-save-bg')
+                const updateBgImageBtn = document.getElementById('btn-update-bg')
+                const clearBgColorBtn = document.getElementById('btn-clear-bgColor')
                 const saveCurrentImgBtn = document.getElementById('btn-use-current')
                 const clearUrlBtn = document.getElementById('btn-clear-bg')
                 const hideMenuWrap = document.getElementById('defaultHideMenu-wrap')
@@ -605,10 +658,17 @@
                     urlInput.value = url
                     BackgroundImageRange.range.customUrl = url
                     BackgroundImageRange.save()
+                    BackgroundImageRange.updateBgImage(url)
                 })
                 clearUrlBtn.addEventListener('click', evt => {
                     urlInput.value = BackgroundImageRange.range.customUrl = ''
                     BackgroundImageRange.save()
+                })
+                clearBgColorBtn.addEventListener('click', evt => {
+                    BackgroundImageRange.setBgColor()
+                })
+                updateBgImageBtn.addEventListener('click', evt => {
+                    BackgroundImageRange.updateBgImage(null, !!BackgroundImageRange.range.bgColor)
                 })
                 hideMenuWrap.addEventListener('change', evt => {
                     const dom = evt.target
@@ -717,6 +777,13 @@
                 const wrapper = document.querySelector('.bar-content')
                 console.log(wrapper)
                 if (wrapper) wrapper.appendChild(sourceLinkLabelWrapperDom)
+            },
+            loadColorPicker() {
+                if (!window.AColorPicker) return
+                window.AColorPicker.from('div.color-picker-container')
+                    .on('change', (picker, color) => {
+                        BackgroundImageRange.setBgColor(color)
+                    })
             }
         }
         window.$CSDNCleaner.init()
