@@ -2,11 +2,11 @@
 // @name         中国大学Mooc工具箱
 // @namespace    http://tampermonkey.net/
 // @icon         https://edu-image.nosdn.127.net/32a8dd2a-b9aa-4ec9-abd5-66cd8751befb.png
-// @version      0.1
+// @version      0.2
 // @description  自动切换🎬最高清晰度 | 🎨 解除页面被灰度处理
+// @note         v0.2 fix: 修复网站源码中对于 `EventTarget.prototype.addEventListener` 的劫持导致的所有脚本触发的事件无效的问题
 // @author       Sven
-// @match        https://www.icourse163.org/learn/*?tid=1452082460*
-// @match        https://www.baidu.com*
+// @match        https://www.icourse163.org/learn/*
 // @grant        none
 // @license      GPL-3.0-only
 // ==/UserScript==
@@ -39,25 +39,25 @@
                 // 检测是否是当前页面
                 pathCheck: url => url.indexOf('#/learn/content?type=detail&id=') > 0,
                 // 允许启用的功能模块
-                get enableModules() { return [SheetsToolkitModule, PlayerToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, PlayerToolkitModule, EventTargetSaveToolkitModule] },
             },
             announce: { // 公告
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             score: { // 评分标准
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             content: { // 课件
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             testlist: { // 测试与作业
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             examlist: { // 考试
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             forumindex: { // 讨论区
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
         }
         /**
@@ -116,6 +116,8 @@
                     cursor: pointer;
                 }
                 .down.f-bg.j-list { width: auto !important; }
+                /* 推荐课程, 会在暂停播放是弹出 */
+                .ux-modal.um-recommend-modal { display: none; }
             `
         }
         init(ctx) {
@@ -129,9 +131,6 @@
             el.id = 'handle-sheets'
             el.appendChild(sheet)
             document.getElementsByTagName('head')[0].appendChild(el)
-        }
-        onload() {
-            console.error('onload ????????????????')
         }
     }
     /**
@@ -153,7 +152,7 @@
                 const qualityButtons = Array.from(ToolkitModule.DOM_QUALITY_BUTTONS)
                 for (const q of ToolkitModule.QUALITYS) {
                     for (const d of qualityButtons) {
-                        if (d.innerHTML === q.key) {
+                        if (d.innerHTML === q.key && window.getComputedStyle(d).display !== 'none') {
                             _highestQualityBtn = d
                             break
                         }
@@ -166,13 +165,27 @@
                     ctx.highestQuality = _highestQualityBtn
                     _highestQualityBtn.click()
                     if (ctx.quality === ctx.highestQuality) {
-                        ctx.log('⚙ 修改视频清晰度成功', _highestQualityBtn)
+                        ctx.log('⚙ 修改视频清晰度成功')
                         break
                     } else {
                         ctx.log('⚙ 修改视频清晰度ing ...')
                     }
                 }
             }
+        }
+    }
+    class EventTargetSaveToolkitModule extends ToolkitModule {
+        init(ctx) {
+            ctx.log('init event target', ctx.evtTarget)
+            ctx.evtTargetProto = EventTarget.prototype
+            EventTarget = new Proxy(EventTarget, {
+                get(target, p, receiver) {
+                    let value = Reflect.get(target, p, receiver)
+                    // ~~会无情的触发 read-only 报错, 请无视这个报错, 目前没有发现其他解决方案~~
+                    if (p === 'prototype') return
+                    return value
+                }
+            })
         }
     }
     class Toolkit {
@@ -209,9 +222,14 @@
                     return
                 }
                 // this.log('🚗 enable module: ', module.constructor && module.constructor.name)
-                return module[hook] &&
-                    typeof module[hook] === 'function' &&
-                    module[hook](this)
+                if (module[hook] && typeof module[hook] === 'function') {
+                    try {
+                        module[hook](this)
+                    } catch(err) {
+                        if (err.message && err.message.indexOf(`property 'prototype' is a read-only`) > 0) return
+                        console.error(err)
+                    }
+                }
             })
         }
         log(...args) {
@@ -222,6 +240,7 @@
         }
     }
 
+    Toolkit.use(new EventTargetSaveToolkitModule())
     Toolkit.use(new SheetsToolkitModule())
     Toolkit.use(new PlayerToolkitModule())
     window._$Toolkit = new Toolkit()
