@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.6.0
+// @version      2.6.1
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -29,9 +29,12 @@
 // @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
 // @note         v2.5.10 修复在内容区时显示横向滚动条的问题, 修复原文链接的贪婪匹配(href)问题
 // @note         v2.6.0  增加纯色背景设置功能, 引入 a color picker 组件; 增加刷新背景图片功能; 增加设置弹窗内按钮样式
+// @note         v2.6.1  增加文章宽度设置, 引入 round-slider 组件
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
+// @require      https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js
+// @require      https://cdn.jsdelivr.net/npm/round-slider@1.6.1/dist/roundslider.min.js
 // @include      https://bbs.csdn.net/topics/*
 // @include      https://*.iteye.com/blog/*
 // @include      https://*.iteye.com/news/*
@@ -101,6 +104,7 @@
                 bgColor: '',            // 纯色背景
                 defaultHideMenu: false, // 默认是否隐藏设置按钮
                 showSourceLink: true,   // 是否匹配原文链接
+                articleWeightRate: '',         // 文章宽度百分比
             },
             init() {
                 const range = Toolkit.getValue('background_ranges')
@@ -174,11 +178,20 @@
             getSourceLinkDisplay() {
                 return this.range.showSourceLink ? 'inline-block' : 'none'
             },
+            getArticleWeight() {
+                const weight = Number(this.range.articleWeightRate)
+                return (weight || 100) + '%'
+            },
             setBgColor(color) {
                 this.range.bgColor = color || ''
                 this.save()
                 document.body.style.setProperty('--background-color', color || '#EAEAEA')
                 this.updateBgImage(null, !!color)
+            },
+            setArticleWeight(weight) {
+                this.range.articleWeightRate = Number(weight) || 100
+                this.save()
+                document.body.style.setProperty('--article-weight', this.range.articleWeightRate + '%')
             },
             updateBgImage(url, disabled) {
                 let imgUrl = url || window.$CSDNCleaner.BackgroundImageRange.getImgUrl()
@@ -218,6 +231,7 @@
                         --source-link-wrapper-display: ${window.$CSDNCleaner.BackgroundImageRange.getSourceLinkDisplay()};
                         --background-color: ${bgColor || '#EAEAEA'};
                         --background-image: ${bgColor ? 'none' : imgUrl};
+                        --article-weight: ${window.$CSDNCleaner.BackgroundImageRange.getArticleWeight()};
                     }
                     body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image); background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
@@ -232,6 +246,16 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    /* 增加 round-slider 组件 | 2020-08-20 20:29:05 */
+                    .round-slider-wrapper { margin: 15px auto !important; }
+                    .round-slider-wrapper .rs-handle { background-color: transparent; border: 8px solid transparent; border-right-color: black; margin: -6px 0px 0px 14px !important; border-width: 6px 104px 6px 4px; }
+                    .round-slider-wrapper .rs-handle:before { display: block; content: " "; position: absolute; height: 22px; width: 22px; background: black; right: -11px; bottom: -11px; border-radius: 100px; }
+                    .round-slider-wrapper .rs-tooltip { top: 75% !important; font-size: 11px; }
+                    .round-slider-wrapper .rs-full.rs-tooltip { top: 75% !important; }
+                    .round-slider-wrapper .rs-tooltip > div { text-align: center; background: orange; color: white; border-radius: 4px; padding: 1px 5px 2px; margin-top: 4px; }
+                    .round-slider-wrapper .rs-range-color { background-color: #DB5959; }
+                    .round-slider-wrapper .rs-path-color { background-color: #F0C5C5; }
+                    .color-picker-container { margin-left: 50%; transform: translateX(-50%); }
                     /* 评论区每行增加 hover 效果 | 2020-05-17 18:32:22 */
                     .comment-box { background-color: rgba(255,255,255,0.9) !important; }
                     .comment-list-box { padding: 0 !important; }
@@ -263,16 +287,16 @@
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
                     @media screen and (max-width: 1379px) and (min-width: 1320px) {
-                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
                     @media screen and (max-width: 1699px) and (min-width: 1550px) {
-                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
                     @media screen and (max-width: 1549px) and (min-width: 1380px) {
-                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
                     @media screen and (min-width: 1700px) {
-                        .main_father > .container#mainBox > main { width: 100% !important; float: none; margin: 0 !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
                     /* 评论区样式重写 | 2019-12-27 21:32:24 */
                     .comment-list-container img.avatar {
@@ -461,6 +485,10 @@
                 window.$CSDNCleaner._launchPagintion() // 解禁并初始化分页组件
                 window.$CSDNCleaner.showSourceLink() // 转载的文章显示原文链接
                 window.$CSDNCleaner.loadColorPicker() // 加载 color picker
+                window.$CSDNCleaner.loadRoundSliderResources() // 加载 color picker
+                    .then(() => {
+                        window.$CSDNCleaner.initRoundSlider() // 加载 round slider
+                    })
             },
             _launchPagintion() {
                 // 监听数据层变动并动态控制分页组件显示
@@ -540,6 +568,15 @@
                                     <button type="button" id="btn-save-bg">保存</button>
                                     <button type="button" id="btn-use-current">使用当前图片</button>
                                 </div>
+                            </div>
+                            <div class="row">
+                                <label>文章宽度: </label>
+                                <div class="color-picker-box">
+                                    <div class="tips-line">
+                                        <span>宽度基于源码中的 <code>.container<code> 的宽度, 详见 <a href="https://github.com/SublimeCT/greasy_monkey_scripts/issues/4#issuecomment-675349913">#4<a/></span>
+                                    </div>
+                                    <div id="weight-slider" class="round-slider-wrapper"></div>
+                                </div
                             </div>
                             <div class="row">
                                 <label>纯色背景(优先使用): </label>
@@ -784,6 +821,57 @@
                     .on('change', (picker, color) => {
                         BackgroundImageRange.setBgColor(color)
                     })
+            },
+            async loadRoundSliderResources() {
+                await this.loadResourcesFiles('link', 'https://cdn.jsdelivr.net/npm/round-slider@1.6.1/dist/roundslider.min.css')
+                // await this.loadResourcesFiles('script', 'https://cdn.jsdelivr.net/npm/round-slider@1.6.1/dist/roundslider.min.js')
+            },
+            loadResourcesFiles(tagName = 'link', href, wait = true) {
+                const tag = document.createElement(tagName)
+                let hrefAttr = 'href'
+                switch (tagName) {
+                    case 'link':
+                        tag.setAttribute('rel', 'stylesheet')
+                        break;
+                    case 'script':
+                        hrefAttr = 'src'
+                        break;
+                }
+                tag.setAttribute(hrefAttr, href)
+                document.head.appendChild(tag)
+                return new Promise((resolve, reject) => {
+                    tag.addEventListener('load', evt => resolve(tag))
+                    tag.addEventListener('error', evt => reject(tag))
+                })
+            },
+            initRoundSlider() {
+                if (!window.changeTooltip) window.changeTooltip = this.changeTooltip
+                $('#weight-slider').roundSlider({
+                    sliderType: 'min-range',
+                    editableTooltip: false,
+                    radius: 105,
+                    width: 16,
+                    value: window.$CSDNCleaner.BackgroundImageRange.range.articleWeightRate || 100,
+                    handleSize: 0,
+                    handleShape: 'square',
+                    circleShape: 'pie',
+                    startAngle: 315,
+                    tooltipFormat: 'changeTooltip',
+                    update: this.onUpdateRoundSlider
+                })
+            },
+            onUpdateRoundSlider(evt) {
+                window.$CSDNCleaner.BackgroundImageRange.setArticleWeight(evt.value)
+            },
+            changeTooltip(e) {
+                const val = e.value
+                let speed = '';
+                if (val < 40) speed = 'Slow';
+                else if (val < 65) speed = 'Normal';
+                else if (val < 90) speed = 'Speed';
+                else speed = 'Very Speed';
+
+                return val + '%' + '<div>' + speed + '<div>';
             }
         }
         window.$CSDNCleaner.init()
