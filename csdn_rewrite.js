@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.6.2
+// @version      2.6.3
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -31,6 +31,7 @@
 // @note         v2.6.0  增加纯色背景设置功能, 引入 a color picker 组件; 增加刷新背景图片功能; 增加设置弹窗内按钮样式
 // @note         v2.6.1  增加文章宽度设置, 引入 round-slider 组件
 // @note         v2.6.2  屏蔽一键三连 tips, 屏蔽文章列表中的 `.recommend-item-box.type_other` 广告
+// @note         v2.6.3  屏蔽 red pack 全屏红包广告
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
@@ -239,7 +240,7 @@
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -541,7 +542,11 @@
                 settingDialog.innerHTML = `
                     <section>
                         <header>
-                            <div>设置 - [${this.NAME}]</div>
+                            <div>
+                                <span class="title">设置</span>
+                                <span> - </span>
+                                <span class="script-name">[${this.NAME}]</span>
+                            </div>
                             <div class="icon-close">
                                 <img src="https://csdnimg.cn//cdn/content-toolbar/guide-close-btn.png">
                             </div>
@@ -633,7 +638,7 @@
                                 <div class="content">
                                     <div class="tips-line">反馈:</div>
                                     <div class="tips-line">
-                                        <a class="link" href="https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback" target="_blank">greasy fork page</a>
+                                        <a class="link" href="https://greasyfork.org/zh-CN/scripts/373457-csdn-%E5%8E%BB%E5%B9%BF%E5%91%8A%E6%B2%89%E6%B5%B8%E9%98%85%E8%AF%BB%E6%A8%A1%E5%BC%8F/feedback" target="_blank">greasyfork page</a>
                                     </div>
                                 </div>
                             </div>
