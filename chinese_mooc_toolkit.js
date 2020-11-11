@@ -2,11 +2,12 @@
 // @name         中国大学Mooc工具箱
 // @namespace    http://tampermonkey.net/
 // @icon         https://edu-image.nosdn.127.net/32a8dd2a-b9aa-4ec9-abd5-66cd8751befb.png
-// @version      0.1
+// @version      0.3
 // @description  自动切换🎬最高清晰度 | 🎨 解除页面被灰度处理
+// @note         v0.2 fix: 修复网站源码中对于 `EventTarget.prototype.addEventListener` 的劫持导致的所有脚本触发的事件无效的问题
+// @note         v0.3 feat: 增加课程详情页切换清晰度支持
 // @author       Sven
-// @match        https://www.icourse163.org/learn/*?tid=1452082460*
-// @match        https://www.baidu.com*
+// @match        https://www.icourse163.org/*
 // @grant        none
 // @license      GPL-3.0-only
 // ==/UserScript==
@@ -35,29 +36,33 @@
          * @description 针对不同页面的细粒度配置, 对应页面的 URL path key
          */
         static PAGES = {
+            // 课程内容页
             content_video: { // 视频页, 这里不区分是视频还是课件页面, 因为视频和课件将在一起显示
                 // 检测是否是当前页面
                 pathCheck: url => url.indexOf('#/learn/content?type=detail&id=') > 0,
                 // 允许启用的功能模块
-                get enableModules() { return [SheetsToolkitModule, PlayerToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, PlayerToolkitModule, EventTargetSaveToolkitModule] },
             },
             announce: { // 公告
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             score: { // 评分标准
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             content: { // 课件
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             testlist: { // 测试与作业
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
             examlist: { // 考试
-                get enableModules() { return [SheetsToolkitModule] },
+                get enableModules() { return [SheetsToolkitModule, EventTargetSaveToolkitModule] },
             },
-            forumindex: { // 讨论区
-                get enableModules() { return [SheetsToolkitModule] },
+            // 课程详情页
+            courseForumindex: { // 讨论区
+                // 检测是否是当前页面
+                pathCheck: url => url.indexOf('/course/') === 0,
+                get enableModules() { return [SheetsToolkitModule, CoverPlayerToolkitModule] },
             },
         }
         /**
@@ -65,7 +70,7 @@
          */
         static get page() {
             for (const p in ToolkitModule.PAGES) {
-                const urlPath = location.search + location.hash
+                const urlPath = location.pathname + location.search + location.hash
                 const useCheckFunction = typeof ToolkitModule.PAGES[p].pathCheck === 'function'
                 const checkResult = useCheckFunction
                     ? ToolkitModule.PAGES[p].pathCheck(urlPath)
@@ -80,10 +85,11 @@
         ]
         // 视频清晰度按钮组
         static get DOM_QUALITY_LIST() { return document.querySelector('.m-popover-quality > ul') }
+        // 课程详情页播放按钮
+        static get DOM_COURSE_DETAILS_PLAY_BTN() { return document.querySelector('.click-btn-wrapper .clickBtn') }
         // 视频当前清晰度按钮
         static get DOM_QUALITY_BUTTONS() { return ToolkitModule.DOM_QUALITY_LIST && ToolkitModule.DOM_QUALITY_LIST.children }
-        onload(ctx) {
-        }
+        onload(ctx) {}
     }
     /**
      * 加入自定义样式
@@ -116,6 +122,8 @@
                     cursor: pointer;
                 }
                 .down.f-bg.j-list { width: auto !important; }
+                /* 推荐课程, 会在暂停播放是弹出 */
+                .ux-modal.um-recommend-modal { display: none; }
             `
         }
         init(ctx) {
@@ -130,14 +138,16 @@
             el.appendChild(sheet)
             document.getElementsByTagName('head')[0].appendChild(el)
         }
-        onload() {
-            console.error('onload ????????????????')
-        }
     }
     /**
      * 处理视频播放器
      */
     class PlayerToolkitModule extends ToolkitModule {
+        /**
+         * 是否忽略被隐藏的清晰度选项按钮
+         * @description 课程详情页非全屏时可能会隐藏最高清晰度选项, 视频详情页会显示全部可用的清晰度
+         */
+        ignoreQualityDisplay = false
         init(ctx) {
             ctx.log('⚙ 开始修改视频清晰度')
             this._fixedQuality(ctx)
@@ -148,31 +158,78 @@
                 await Toolkit.delay(300)
                 if (!qualityBtnList) continue
                 if (qualityBtnList.length === 1) break // 仅有一个清晰度时不作处理
-                let _highestQualityBtn = null // 最高清晰度
-                // 寻找最高清晰度
-                const qualityButtons = Array.from(ToolkitModule.DOM_QUALITY_BUTTONS)
-                for (const q of ToolkitModule.QUALITYS) {
-                    for (const d of qualityButtons) {
-                        if (d.innerHTML === q.key) {
-                            _highestQualityBtn = d
-                            break
-                        }
-                    }
-                    if (_highestQualityBtn) break
-                }
-                // 切换到最高清晰度, ⚠️ 这里需要多次调用 click(), 实测一次可能不会成功
-                if (_highestQualityBtn) {
-                    ctx.quality = qualityButtons.find(d => d.classList.contains('z-sel'))
-                    ctx.highestQuality = _highestQualityBtn
-                    _highestQualityBtn.click()
-                    if (ctx.quality === ctx.highestQuality) {
-                        ctx.log('⚙ 修改视频清晰度成功', _highestQualityBtn)
-                        break
-                    } else {
-                        ctx.log('⚙ 修改视频清晰度ing ...')
-                    }
-                }
+                const changed = this._handleQuality(ctx)
+                if (changed) break
             }
+        }
+        _handleQuality(ctx) {
+            // 寻找最高清晰度
+            ctx.highestQuality = this._findHighestQualityBtn() // 最高清晰度
+            // 切换到最高清晰度, ⚠️ 这里需要多次调用 click(), 实测一次可能不会成功
+            const changed = this.changeQuality(ctx)
+            if (changed) {
+                ctx.log('⚙ 修改视频清晰度成功')
+                return true
+            } else {
+                ctx.log('⚙ 修改视频清晰度ing ...')
+            }
+        }
+        /**
+         * 寻找最高清晰度
+         */
+        _findHighestQualityBtn() {
+            let _highestQualityBtn = null
+            for (const q of ToolkitModule.QUALITYS) {
+                for (const d of Array.from(ToolkitModule.DOM_QUALITY_BUTTONS)) {
+                    if (d.innerHTML === q.key && (this.ignoreQualityDisplay || (!this.ignoreQualityDisplay && window.getComputedStyle(d).display !== 'none'))) {
+                        _highestQualityBtn = d
+                        break
+                    }
+                }
+                if (_highestQualityBtn) break
+            }
+            return _highestQualityBtn
+        }
+        /**
+         * 点击最高清晰度按钮, 返回是否切换成功
+         */
+        changeQuality(ctx) {
+            if (!ctx.highestQuality) return
+            ctx.quality = Array.from(ToolkitModule.DOM_QUALITY_BUTTONS).find(d => d.classList.contains('z-sel'))
+            ctx.highestQuality.click()
+            return ctx.quality === ctx.highestQuality
+        }
+    }
+    class CoverPlayerToolkitModule extends PlayerToolkitModule {
+        /**
+         * 是否忽略被隐藏的清晰度选项按钮
+         * @description 课程详情页非全屏时可能会隐藏最高清晰度选项, 视频详情页会显示全部可用的清晰度
+         */
+        ignoreQualityDisplay = true
+        async init(ctx) {
+            for (let times = 40; times--;) {
+                await Toolkit.delay(300)
+                const playBtn = ToolkitModule.DOM_COURSE_DETAILS_PLAY_BTN
+                if (!playBtn) continue
+                playBtn.addEventListener('click', evt => {
+                    this._fixedQuality(ctx)
+                })
+                break
+            }
+        }
+    }
+    class EventTargetSaveToolkitModule extends ToolkitModule {
+        init(ctx) {
+            ctx.log('init event target', ctx.evtTarget)
+            ctx.evtTargetProto = EventTarget.prototype
+            EventTarget = new Proxy(EventTarget, {
+                get(target, p, receiver) {
+                    let value = Reflect.get(target, p, receiver)
+                    // ~~会无情的触发 read-only 报错, 请无视这个报错, 目前没有发现其他解决方案~~
+                    if (p === 'prototype') return
+                    return value
+                }
+            })
         }
     }
     class Toolkit {
@@ -209,9 +266,14 @@
                     return
                 }
                 // this.log('🚗 enable module: ', module.constructor && module.constructor.name)
-                return module[hook] &&
-                    typeof module[hook] === 'function' &&
-                    module[hook](this)
+                if (module[hook] && typeof module[hook] === 'function') {
+                    try {
+                        module[hook](this)
+                    } catch(err) {
+                        if (err.message && err.message.indexOf(`property 'prototype' is a read-only`) > 0) return
+                        console.error(err)
+                    }
+                }
             })
         }
         log(...args) {
@@ -222,6 +284,8 @@
         }
     }
 
+    Toolkit.use(new EventTargetSaveToolkitModule())
+    Toolkit.use(new CoverPlayerToolkitModule())
     Toolkit.use(new SheetsToolkitModule())
     Toolkit.use(new PlayerToolkitModule())
     window._$Toolkit = new Toolkit()
