@@ -88,7 +88,7 @@
                             result.category = categoryName
                         }
                     }
-                    result.category
+                    // result.category
                     result.name = IMG_MAP[this.idOrUrl.toString()]
                 }
                 return result
@@ -203,6 +203,7 @@
                     .appendSheets() // 添加样式
                     // .cleanCopy() // 解禁复制功能
                     .launch() // DOM 初始化
+                    .disabledDarkSkin()
             },
             // 生成 sheets
             _getSheets() {
@@ -219,7 +220,7 @@
                         --background-color: ${bgColor || '#EAEAEA'};
                         --background-image: ${bgColor ? 'none' : imgUrl};
                     }
-                    body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image); background-attachment: fixed !important;background-size; cover; background-repeat: no-repeat; background-size: 100% !important; }
+                    body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
@@ -232,6 +233,7 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
+                    #content_views{ user-select: auto !important; }
                     /* 评论区每行增加 hover 效果 | 2020-05-17 18:32:22 */
                     .comment-box { background-color: rgba(255,255,255,0.9) !important; }
                     .comment-list-box { padding: 0 !important; }
@@ -461,6 +463,7 @@
                 window.$CSDNCleaner._launchPagintion() // 解禁并初始化分页组件
                 window.$CSDNCleaner.showSourceLink() // 转载的文章显示原文链接
                 window.$CSDNCleaner.loadColorPicker() // 加载 color picker
+                window.$CSDNCleaner.disabledDarkSkin() // 禁用暗黑系 css 样式
             },
             _launchPagintion() {
                 // 监听数据层变动并动态控制分页组件显示
@@ -784,6 +787,14 @@
                     .on('change', (picker, color) => {
                         BackgroundImageRange.setBgColor(color)
                     })
+            },
+            disabledDarkSkin() {
+                const sheets = document.querySelectorAll('link')
+                for (const sheet of Array.from(sheets)) {
+                    if (sheet.href.indexOf('template/themes_skin/skin-') > 0) {
+                        sheet.setAttribute('disabled', 'disabled')
+                    }
+                }
             }
         }
         window.$CSDNCleaner.init()
