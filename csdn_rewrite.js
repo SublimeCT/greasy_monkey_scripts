@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.0
+// @version      2.7.1
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -33,6 +33,7 @@
 // @note         v2.6.2  屏蔽一键三连 tips, 屏蔽文章列表中的 `.recommend-item-box.type_other` 广告
 // @note         v2.6.3  屏蔽 red pack 全屏红包广告
 // @note         v2.7.0  增加隐藏底部推荐文章和 footer 信息功能; 屏蔽 csdn skin css 文件; 修复设置弹窗 HTML 语法错误导致的标签解析异常;
+// @note         v2.7.1  修复文章宽度 `<1320px` 时宽度设置无效的问题
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
@@ -305,6 +306,9 @@
                     /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
+                    @media screen and (max-width: 1320px) {
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                    }
                     @media screen and (max-width: 1379px) and (min-width: 1320px) {
                         .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
