@@ -139,9 +139,9 @@
     window.addEventListener('DOMContentLoaded', async () => {
         for (let times = 10; times--;) {
             await Toolkit.delay()
-            if (GraphQLPlayground) break
+            if (window.GraphQLPlayground) break
         }
-        if (!GraphQLPlayground) return
+        if (!window.GraphQLPlayground) return
         // 执行所有模块的钩子函数
         window._$GraphQLToolkit.emitHook('onload')
     })
