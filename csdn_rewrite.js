@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.6.4
+// @version      2.7.1
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
@@ -32,7 +32,8 @@
 // @note         v2.6.1  增加文章宽度设置, 引入 round-slider 组件
 // @note         v2.6.2  屏蔽一键三连 tips, 屏蔽文章列表中的 `.recommend-item-box.type_other` 广告
 // @note         v2.6.3  屏蔽 red pack 全屏红包广告
-// @note         v2.6.4  屏蔽 csdn skin css 文件
+// @note         v2.7.0  增加隐藏底部推荐文章和 footer 信息功能; 屏蔽 csdn skin css 文件; 修复设置弹窗 HTML 语法错误导致的标签解析异常;
+// @note         v2.7.1  修复文章宽度 `<1320px` 时宽度设置无效的问题
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
@@ -101,13 +102,15 @@
             },
             STATE_SELECTED_CATEGORY: 'STATE_SELECTED_CATEGORY',
             range: {
-                categorys: [],          // 类目集合
-                imgs: [],               // 图片集合
-                customUrl: '',          // 自定义链接
-                bgColor: '',            // 纯色背景
-                defaultHideMenu: false, // 默认是否隐藏设置按钮
-                showSourceLink: true,   // 是否匹配原文链接
-                articleWeightRate: '',         // 文章宽度百分比
+                categorys: [],              // 类目集合
+                imgs: [],                   // 图片集合
+                customUrl: '',              // 自定义链接
+                bgColor: '',                // 纯色背景
+                defaultHideMenu: false,     // 默认是否隐藏设置按钮
+                hideRecommendBox: false,    // 默认是否隐藏底部推荐文章
+                hideCopyright: false,       // 默认是否隐藏底部版权信息
+                showSourceLink: true,       // 是否匹配原文链接
+                articleWeightRate: '',      // 文章宽度百分比
             },
             init() {
                 const range = Toolkit.getValue('background_ranges')
@@ -191,6 +194,14 @@
                 document.body.style.setProperty('--background-color', color || '#EAEAEA')
                 this.updateBgImage(null, !!color)
             },
+            get recommendBoxDisplayAttributes() { return ['--display-recommend-box', this.range.hideRecommendBox ? 'none' : 'block'] },
+            syncHideRecommendBox() {
+                document.body.style.setProperty(...this.recommendBoxDisplayAttributes)
+            },
+            get copyrightDisplayAttributes() { return ['--display-copyright', this.range.hideCopyright ? 'none' : 'block'] },
+            syncHideCopyright() {
+                document.body.style.setProperty(...this.copyrightDisplayAttributes)
+            },
             setArticleWeight(weight) {
                 this.range.articleWeightRate = Number(weight) || 100
                 this.save()
@@ -235,6 +246,8 @@
                         --background-color: ${bgColor || '#EAEAEA'};
                         --background-image: ${bgColor ? 'none' : imgUrl};
                         --article-weight: ${window.$CSDNCleaner.BackgroundImageRange.getArticleWeight()};
+                        ${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes.join(': ')};
+                        ${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes.join(': ')};
                     }
                     body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
@@ -250,6 +263,9 @@
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
                     #content_views{ user-select: auto !important; }
+                    /* 增加隐藏底部推荐文章和版权信息功能 | 2020-11-11 21:03:10 */
+                    .recommend-box { display: var(${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes[0]}) !important; }
+                    .blog-footer-bottom { display: var(${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes[0]}) !important; }
                     /* 增加 round-slider 组件 | 2020-08-20 20:29:05 */
                     .round-slider-wrapper { margin: 15px auto !important; }
                     .round-slider-wrapper .rs-handle { background-color: transparent; border: 8px solid transparent; border-right-color: black; margin: -6px 0px 0px 14px !important; border-width: 6px 104px 6px 4px; }
@@ -290,6 +306,9 @@
                     /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
+                    @media screen and (max-width: 1320px) {
+                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                    }
                     @media screen and (max-width: 1379px) and (min-width: 1320px) {
                         .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
                     }
@@ -368,6 +387,7 @@
                         justify-content: space-between;
                         padding: 0 15px;
                         align-items: center;
+                        border-bottom: 1px solid #EEE;
                     }
                     #setting-dialog section header .icon-close > img {
                         width: 20px;
@@ -546,9 +566,9 @@
                     <section>
                         <header>
                             <div>
-                                <span class="title">设置</span>
-                                <span> - </span>
-                                <span class="script-name">[${this.NAME}]</span>
+                                <span class="title">脚本设置</span>
+                                <!-- <span> - </span> -->
+                                <!-- <span class="script-name">[${this.NAME}]</span> -->
                             </div>
                             <div class="icon-close">
                                 <img src="https://csdnimg.cn//cdn/content-toolbar/guide-close-btn.png">
@@ -560,6 +580,7 @@
                                 <div class="content">
                                     ${currentBackgroundHTML}
                                 </div>
+                                <button type="reset" id="btn-update-bg">刷新背景图片</button>
                             </div>
                             <div class="row">
                                 <label>背景图片类目范围(点选): </label>
@@ -572,7 +593,6 @@
                                 <div class="tips-line">您可以选择上传百度首页自定义背景图片, 然后将链接填入</div>
                                 <div class="content">
                                     <input id="custom-bg-url" value="${BackgroundImageRange.range.customUrl}"/>
-                                    <button type="reset" id="btn-update-bg">刷新背景图片</button>
                                     <button type="reset" id="btn-clear-bg">清除</button>
                                     <button type="button" id="btn-save-bg">保存</button>
                                     <button type="button" id="btn-use-current">使用当前图片</button>
@@ -582,10 +602,15 @@
                                 <label>文章宽度: </label>
                                 <div class="color-picker-box">
                                     <div class="tips-line">
-                                        <span>宽度基于源码中的 <code>.container<code> 的宽度, 详见 <a href="https://github.com/SublimeCT/greasy_monkey_scripts/issues/4#issuecomment-675349913">#4<a/></span>
+                                        <span>
+                                            宽度基于源码中的
+                                            <code>.container</code>
+                                            的宽度, 详见
+                                            <a href="https://github.com/SublimeCT/greasy_monkey_scripts/issues/4#issuecomment-675349913">#4</a>
+                                        </span>
                                     </div>
                                     <div id="weight-slider" class="round-slider-wrapper"></div>
-                                </div
+                                </div>
                             </div>
                             <div class="row">
                                 <label>纯色背景(优先使用): </label>
@@ -603,7 +628,7 @@
                                 </div
                             </div>
                             <div class="row" id="showSourceLink-wrap">
-                                <label>是否显示原文链接: </label>
+                                <label>是否显示 原文链接: </label>
                                 <div class="tips-line">原文链接从顶部文章信息或原文中提取, 若作者直接文中写入原文链接(未在文章信息中标注), 有可能会匹配错误</div>
                                 <div class="content">
                                     <label style="margin-right: 15px;">
@@ -617,7 +642,7 @@
                                 </div>
                             </div>
                             <div class="row" id="defaultHideMenu-wrap">
-                                <label>是否隐藏设置(小齿轮)按钮: </label>
+                                <label>是否隐藏 设置(小齿轮)按钮: </label>
                                 <div class="tips-line">隐藏之后设置(小齿轮)按钮会与回到顶部按钮同步显示和隐藏</div>
                                 <div class="content">
                                     <label style="margin-right: 15px;">
@@ -626,6 +651,34 @@
                                     </label>
                                     <label>
                                         <input type="radio" value="0" ${BackgroundImageRange.range.defaultHideMenu ? '' : 'checked'} class="radio-defaultHideMenu" name="defaultHideMenu" />
+                                        <span>显示</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="row" id="hideRecommendBox-wrap">
+                                <label>是否隐藏所有 推荐文章: </label>
+                                <div class="tips-line">隐藏之后将不会显示底部的推荐文章列表</div>
+                                <div class="content">
+                                    <label style="margin-right: 15px;">
+                                        <input type="radio" value="1" ${BackgroundImageRange.range.hideRecommendBox ? 'checked' : ''} class="radio-hideRecommendBox" name="hideRecommendBox" />
+                                        <span>隐藏</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" value="0" ${BackgroundImageRange.range.hideRecommendBox ? '' : 'checked'} class="radio-hideRecommendBox" name="hideRecommendBox" />
+                                        <span>显示</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="row" id="hideCopyright-wrap">
+                                <label>是否隐藏最底部 csdn版权信息: </label>
+                                <div class="tips-line">隐藏之后将不会显示页面最底部的 footer</div>
+                                <div class="content">
+                                    <label style="margin-right: 15px;">
+                                        <input type="radio" value="1" ${BackgroundImageRange.range.hideCopyright ? 'checked' : ''} class="radio-hideCopyright" name="hideCopyright" />
+                                        <span>隐藏</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" value="0" ${BackgroundImageRange.range.hideCopyright ? '' : 'checked'} class="radio-hideCopyright" name="hideCopyright" />
                                         <span>显示</span>
                                     </label>
                                 </div>
@@ -660,6 +713,8 @@
                 const saveCurrentImgBtn = document.getElementById('btn-use-current')
                 const clearUrlBtn = document.getElementById('btn-clear-bg')
                 const hideMenuWrap = document.getElementById('defaultHideMenu-wrap')
+                const hideRecommendBox = document.getElementById('hideRecommendBox-wrap')
+                const hideCopyright = document.getElementById('hideCopyright-wrap')
                 const showSourceLinkWrap = document.getElementById('showSourceLink-wrap')
                 if (!dialogWrapper) { console.error(`[${window.$CSDNCleaner.NAME}] Internal error. dialog init failed.`); return }
                 dialogWrapper.addEventListener('click', evt => {
@@ -721,6 +776,20 @@
                     if (!dom || !dom.classList || !dom.classList.contains('radio-defaultHideMenu')) return
                     const val = !!Number(dom.value)
                     urlInput.defaultHideMenu = BackgroundImageRange.range.defaultHideMenu = val
+                    BackgroundImageRange.save()
+                })
+                hideRecommendBox.addEventListener('change', evt => {
+                    const dom = evt.target
+                    if (!dom || !dom.classList || !dom.classList.contains('radio-hideRecommendBox')) return
+                    const val = !!Number(dom.value)
+                    urlInput.hideRecommendBox = BackgroundImageRange.range.hideRecommendBox = val
+                    BackgroundImageRange.save()
+                })
+                hideCopyright.addEventListener('change', evt => {
+                    const dom = evt.target
+                    if (!dom || !dom.classList || !dom.classList.contains('radio-hideCopyright')) return
+                    const val = !!Number(dom.value)
+                    urlInput.hideCopyright = BackgroundImageRange.range.hideCopyright = val
                     BackgroundImageRange.save()
                 })
                 showSourceLinkWrap.addEventListener('change', evt => {
