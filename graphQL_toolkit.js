@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         graphQL-toolkit
+// @namespace    https://github.com/SublimeCT/greasy_monkey_scripts
+// @version      0.0.1
+// @description  graphQL 工具脚本 💪
+// @note         v0.0.2 记住上次的搜索内容
+// @note         v0.0.1 使文档居左
+// @author       Sven
+// @icon         https://graphql.cn/img/favicon.png
+// @include      https://*
+// @include      http://*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+
 ; (() => {
     class ToolkitModule {
         constructor() { }
@@ -27,7 +42,7 @@
      * 使用上次的搜索内容
      */
     class QueryToolkitModule extends ToolkitModule {
-        init(ctx) {}
+        init(ctx) { }
         static async addEventListeners() {
             let items
             for (let times = 20; times--;) {
