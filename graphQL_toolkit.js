@@ -56,7 +56,6 @@
             searchInput.addEventListener('input', evt => {
                 Store.setOption({ query: evt.target.value })
             })
-            console.log(searchInput, apiDoms)
         }
         onload() {
             QueryToolkitModule.addEventListeners()
