@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.2
+// @version      2.7.3
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v2.7.3  修改 interceptCSDN 中 `csdn` 取值逻辑, 修复刷新背景图片时图片名称不变的问题
 // @note         v2.7.2  移除外链拦截行为; 增加部分元素的过渡效果;
 // @note         v2.7.1  修复文章宽度 `<1320px` 时宽度设置无效的问题
 // @note         v2.7.0  增加隐藏底部推荐文章和 footer 信息功能; 屏蔽 csdn skin css 文件; 修复设置弹窗 HTML 语法错误导致的标签解析异常;
@@ -84,11 +85,18 @@
         const BackgroundImageRange = {
             idOrUrl: null, // 当前 image ID / 自定义 url, 用于标记当前显示的图片
             get currentUrl() {
-                const result = { url: null, name: null, category: null }
+                const result = { url: null, name: null, category: null, html: null }
                 if (!this.idOrUrl) return result
+                // window.$CSDNCleaner.BackgroundImageRange.range.bgColor
+                //     ? `<span>${window.$CSDNCleaner.BackgroundImageRange.range.bgColor}</span>`
+                //     : `<a class="link" target="_blank" href="${url}">${category ? '<' + category + '> ' : ''}${name}</a>`
                 if (typeof this.idOrUrl === 'string') {
                     result.url = this.idOrUrl
                     result.name = '自定义图片'
+                    result.html = `<span>自定义图片</span>`
+                } else if (this.range.bgColor) {
+                    result.name = this.range.bgColor
+                    result.html = `<span>${this.range.bgColor}</span>`
                 } else {
                     result.url = this.toBaiduUrl({ id: this.idOrUrl, cssWrap: false })
                     for (const categoryName in IMG_CATEGORYS) {
@@ -98,6 +106,7 @@
                     }
                     // result.category
                     result.name = IMG_MAP[this.idOrUrl.toString()]
+                    result.html = `<a class="link" target="_blank" href="${result.url}">${result.category ? '<' + result.category + '> ' : ''}${result.name}</a>`
                 }
                 return result
             },
@@ -212,6 +221,8 @@
                 let imgUrl = url || window.$CSDNCleaner.BackgroundImageRange.getImgUrl()
                 if (imgUrl.indexOf('url(') === -1) imgUrl = `url(${imgUrl})`
                 document.body.style.setProperty('--background-image', disabled ? 'none' : imgUrl)
+                const labelEl = document.getElementById('setting-background-label')
+                labelEl.innerHTML = this.currentUrl.html
             }
         }
         window.$CSDNCleaner = {
@@ -240,13 +251,12 @@
              */
             interceptCSDN() {
                 const script = document.createElement('script')
-                script.innerText = `window.$csdn={$intercept: true};$handleInterceptCSDN=0;Object.defineProperty(window, 'csdn', { set(val) { typeof window.$handleInterceptCSDN === 'function' ? window.$handleInterceptCSDN(val) : window.$csdn = val; }, get() { return window.$csdn } });`
+                script.innerText = `window.$csdn=window.csdn||{$intercept: true};$handleInterceptCSDN=0;Object.defineProperty(window, 'csdn', { set(val) { typeof window.$handleInterceptCSDN === 'function' ? window.$handleInterceptCSDN(val) : window.$csdn = val; }, get() { return window.$csdn } });`
                 document.querySelector('head').appendChild(script)
                 $handleInterceptCSDN = val => {
-                    if (val.middleJump) val.middleJump = null // 移除跳转链接时的事件绑定函数
-                    for (const k in val) {
-                        $csdn[k] = val[k]
-                    }
+                    $csdn = val // 使用直接赋值的方式, 防止因某些属性无法遍历导致未赋值的情况
+                    $csdn.$intercept = true // 标记为已启用拦截
+                    $csdn.middleJump = null // 移除跳转链接时的事件绑定函数
                 }
             },
             // 生成 sheets
@@ -518,7 +528,6 @@
             },
             // 复制功能
             cleanCopy() {
-                console.log(csdn.copyright, window.csdn, 999999999)
                 csdn.copyright && csdn.copyright.init('', '', '')
                 return this
             },
@@ -582,10 +591,8 @@
                 settingDialog.id = 'setting-dialog'
                 settingDialog.classList.add('display-none')
                 const categorys = BackgroundImageRange.toCategoryHTML()
-                const { url, name, category } = window.$CSDNCleaner.BackgroundImageRange.currentUrl
-                const currentBackgroundHTML = window.$CSDNCleaner.BackgroundImageRange.range.bgColor
-                    ? `<span>${window.$CSDNCleaner.BackgroundImageRange.range.bgColor}</span>`
-                    : `<a class="link" target="_blank" href="${url}">${category ? '<' + category + '> ' : ''}${name}</a>`
+                const { url, name, category, html } = window.$CSDNCleaner.BackgroundImageRange.currentUrl
+                const currentBackgroundHTML = html
                 settingDialog.innerHTML = `
                     <section>
                         <header>
@@ -601,7 +608,7 @@
                         <article>
                             <div class="row">
                                 <label>当前背景图: </label>
-                                <div class="content">
+                                <div class="content" id="setting-background-label">
                                     ${currentBackgroundHTML}
                                 </div>
                                 <button type="reset" id="btn-update-bg">刷新背景图片</button>
@@ -778,7 +785,6 @@
                 })
                 saveCurrentImgBtn.addEventListener('click', evt => {
                     const { url } = window.$CSDNCleaner.BackgroundImageRange.currentUrl
-                    console.warn(url, window.$CSDNCleaner.BackgroundImageRange)
                     if (!url) return false
                     urlInput.value = url
                     BackgroundImageRange.range.customUrl = url
