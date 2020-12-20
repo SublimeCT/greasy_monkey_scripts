@@ -1,39 +1,40 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.1
+// @version      2.7.2
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
-// @note         v1.8    移除点击文章中的链接拦截, 直接跳转到目标链接, 建议使用鼠标中键在新窗口打开链接!; 更新右侧 toolkit 按钮组的屏蔽规则
-// @note         v1.9    解除跳转拦截; 增加新的广告过滤规则
-// @note         v1.10   增加 ask.csdn.net 支持
-// @note         v1.11   更新 bbs.csdn.net 过滤规则; 增加底部 "底线" 描述
-// @note         v2.0    增加背景图设置入口按钮, 扩展 bottom tool bar
-// @note         v2.1    修改脚本加载时机, 不会再出现先加载广告后屏蔽的情况了
-// @note         v2.2.0  增加设置入口 icon timeout
-// @note         v2.2.1  屏蔽 side toolbar 中的广告 icon
-// @note         v2.3.0  显示当前背景图名称, 完善自定义图片; 删除 `最近使用` 图片类目
-// @note         v2.4.0  增加隐藏设置按钮选项; 修复自定义链接取值错误的问题
-// @note         v2.4.1  修复设置弹窗在特定页面下的宽度异常问题, 增加底部推荐文章 hover 效果
-// @note         v2.5.0  增加 iteye.com 样式兼容, 使用 GM_setValue 实现跨域共享本地存储数据
-// @note         v2.5.1  修改正文底部 私信求帮助 按钮样式, 使其仅在 hover 状态下可见, 屏蔽底部 copyright 和 原皮肤信息
-// @note         v2.5.2  屏蔽 **的顶部巨幅广告图; 隐藏底部 more-toolbox 按钮组; 修改脚本描述
-// @note         v2.5.3  更新文章内容区域顶部的巨幅广告图屏蔽规则
-// @note         v2.5.4  显示评论列表分页组件; 继续更新广告屏蔽规则
-// @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
-// @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
-// @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
-// @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
-// @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
-// @note         v2.5.10 修复在内容区时显示横向滚动条的问题, 修复原文链接的贪婪匹配(href)问题
-// @note         v2.6.0  增加纯色背景设置功能, 引入 a color picker 组件; 增加刷新背景图片功能; 增加设置弹窗内按钮样式
-// @note         v2.6.1  增加文章宽度设置, 引入 round-slider 组件
-// @note         v2.6.2  屏蔽一键三连 tips, 屏蔽文章列表中的 `.recommend-item-box.type_other` 广告
-// @note         v2.6.3  屏蔽 red pack 全屏红包广告
-// @note         v2.7.0  增加隐藏底部推荐文章和 footer 信息功能; 屏蔽 csdn skin css 文件; 修复设置弹窗 HTML 语法错误导致的标签解析异常;
+// @note         v2.7.2  移除外链拦截行为; 增加部分元素的过渡效果;
 // @note         v2.7.1  修复文章宽度 `<1320px` 时宽度设置无效的问题
+// @note         v2.7.0  增加隐藏底部推荐文章和 footer 信息功能; 屏蔽 csdn skin css 文件; 修复设置弹窗 HTML 语法错误导致的标签解析异常;
+// @note         v2.6.3  屏蔽 red pack 全屏红包广告
+// @note         v2.6.2  屏蔽一键三连 tips, 屏蔽文章列表中的 `.recommend-item-box.type_other` 广告
+// @note         v2.6.1  增加文章宽度设置, 引入 round-slider 组件
+// @note         v2.6.0  增加纯色背景设置功能, 引入 a color picker 组件; 增加刷新背景图片功能; 增加设置弹窗内按钮样式
+// @note         v2.5.10 修复在内容区时显示横向滚动条的问题, 修复原文链接的贪婪匹配(href)问题
+// @note         v2.5.9  可以设置是否显示原文链接, 修复设置弹窗无法关闭的 bug, 调整评论区透明度并增加 hover 效果
+// @note         v2.5.8  增加原文链接(从顶部折叠栏或文中提取原文链接), 显示在顶部 info-box 中; 屏蔽固定在页面底部的 toolbox; 底部作者信息右侧按钮只显示关注; 评论区输入框交叉轴对齐
+// @note         v2.5.7  防止文章内容被黑白化处理(文中的图片被灰度处理后严重影响阅读), 适用于特殊日期; *2020-04-04 向疫情中付出努力的所有医务工作者及志愿者致敬!*
+// @note         v2.5.6  覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱; 评论区评论内容强制换行以保持一致性
+// @note         v2.5.5  监听数据层变化并控制分页组件显示; 优化评论区样式
+// @note         v2.5.4  显示评论列表分页组件; 继续更新广告屏蔽规则
+// @note         v2.5.3  更新文章内容区域顶部的巨幅广告图屏蔽规则
+// @note         v2.5.2  屏蔽 **的顶部巨幅广告图; 隐藏底部 more-toolbox 按钮组; 修改脚本描述
+// @note         v2.5.1  修改正文底部 私信求帮助 按钮样式, 使其仅在 hover 状态下可见, 屏蔽底部 copyright 和 原皮肤信息
+// @note         v2.5.0  增加 iteye.com 样式兼容, 使用 GM_setValue 实现跨域共享本地存储数据
+// @note         v2.4.1  修复设置弹窗在特定页面下的宽度异常问题, 增加底部推荐文章 hover 效果
+// @note         v2.4.0  增加隐藏设置按钮选项; 修复自定义链接取值错误的问题
+// @note         v2.3.0  显示当前背景图名称, 完善自定义图片; 删除 `最近使用` 图片类目
+// @note         v2.2.1  屏蔽 side toolbar 中的广告 icon
+// @note         v2.2.0  增加设置入口 icon timeout
+// @note         v2.1    修改脚本加载时机, 不会再出现先加载广告后屏蔽的情况了
+// @note         v2.0    增加背景图设置入口按钮, 扩展 bottom tool bar
+// @note         v1.11   更新 bbs.csdn.net 过滤规则; 增加底部 "底线" 描述
+// @note         v1.10   增加 ask.csdn.net 支持
+// @note         v1.9    解除跳转拦截; 增加新的广告过滤规则
+// @note         v1.8    移除点击文章中的链接拦截, 直接跳转到目标链接, 建议使用鼠标中键在新窗口打开链接!; 更新右侧 toolkit 按钮组的屏蔽规则
 // @match        *://blog.csdn.net/*/article/details/*
 // @match        *://*.blog.csdn.net/article/details/*
 // @require      https://unpkg.com/a-color-picker@1.2.1/dist/acolorpicker.js
@@ -229,7 +230,24 @@
                     .appendSheets() // 添加样式
                     // .cleanCopy() // 解禁复制功能
                     .launch() // DOM 初始化
-                    .disabledDarkSkin()
+                    .disabledDarkSkin() // 禁用 dark skin
+                    .interceptCSDN() // 拦截 csdn 对象的赋值操作
+            },
+            /**
+             * 拦截源码中对于 `window.csdn` 的赋值操作
+             * @description 由于 `TamperMonkey` 中获取的 `window` 对象并不是真正的 `window` 对象, 所以不能直接 `Object.defineProperty(window, 'scdn')`
+             * @description 所以用 `<script>` 注入的方式执行绑定拦截器的代码
+             */
+            interceptCSDN() {
+                const script = document.createElement('script')
+                script.innerText = `window.$csdn={$intercept: true};$handleInterceptCSDN=0;Object.defineProperty(window, 'csdn', { set(val) { typeof window.$handleInterceptCSDN === 'function' ? window.$handleInterceptCSDN(val) : window.$csdn = val; }, get() { return window.$csdn } });`
+                document.querySelector('head').appendChild(script)
+                $handleInterceptCSDN = val => {
+                    if (val.middleJump) val.middleJump = null // 移除跳转链接时的事件绑定函数
+                    for (const k in val) {
+                        $csdn[k] = val[k]
+                    }
+                }
             },
             // 生成 sheets
             _getSheets() {
@@ -279,8 +297,10 @@
                     /* 评论区每行增加 hover 效果 | 2020-05-17 18:32:22 */
                     .comment-box { background-color: rgba(255,255,255,0.9) !important; }
                     .comment-list-box { padding: 0 !important; }
-                    .comment-list-box > .comment-list { padding: 0 24px; margin-top: 0 !important; padding-top: 16px }
+                    .comment-list-box > .comment-list { padding: 0 24px; margin-top: 0 !important; padding-top: 16px; }
+                    .comment-list-box .comment-list { transition: all .2s ease-in-out; }
                     .comment-list-box > .comment-list:hover { background-color: rgba(255,255,255,0.7); }
+                    .comment-list-box .comment-line-box:hover img.avatar { border-color: rgb(255, 198, 198, 0.95); }
                     /* 屏蔽固定在页面底部的 toolbox | 2020-05-17 18:28:03 */
                     .more-toolbox > .left-toolbox { position: relative !important; left: 0 !important; }
                     /* 底部作者信息右侧按钮只显示关注 | 2020-05-17 18:26:52 */
@@ -327,6 +347,8 @@
                         height: var(--comments-avatar-size) !important;
                         margin-top: 4px;
                         margin-right: 15px !important;
+                        border: 3px solid rgba(215, 215, 205, 0.7);
+                        transition: border-color .2s ease-in-out;
                     }
                     .comment-edit-box img.show_loginbox {
                         width: var(--comments-avatar-size) !important;
@@ -353,6 +375,7 @@
                     body>#page>#content>#main, #bbs_title_bar > .owner_top,.blog-content-box { border-top-left-radius: 8px; border-top-right-radius: 8px; }
                     body > div#page {background-color: transparent}
                     .dl_no_more:after { content: "上边是原话, 脚本作者原本想屏蔽这段话, 但是 CSDN 从未找到自己的底线;\\A 从阅读更多必须注册, 到验证手机号必须关注公众号, 再到大尺度H广告, 严重影响了用户体验;\\A 自从 CSDN 使用明文密码被脱库之后我就不再使用 CSDN 账号, 为了继续阅读 CSDN 内容我写了这个脚本  "; color: teal; display: block; width: 60%; margin: auto; white-space: pre; }
+                    .recommend-box>.recommend-item-box { transition: all .2s ease-in-out; }
                     .recommend-box>.recommend-item-box:hover { background-color: rgba(255,255,255,0.8); }
                     /* 脚本设置弹窗 */
                     a.option-box[data-type="$setting"] img {
@@ -495,6 +518,7 @@
             },
             // 复制功能
             cleanCopy() {
+                console.log(csdn.copyright, window.csdn, 999999999)
                 csdn.copyright && csdn.copyright.init('', '', '')
                 return this
             },
@@ -821,7 +845,7 @@
                 return option
             },
             _sourceLinkKeywords: ['转载自', '转自', '原文地址', '原文链接', '转载地址', '转载链接', '原文:', '原文：'],
-            _getSourceLink (row) {
+            _getSourceLink(row) {
                 for (const keyword of this._sourceLinkKeywords) {
                     if (row.indexOf(keyword) === -1) continue
                     // 1. 尝试从 <a> 标签中获取链接
@@ -907,6 +931,7 @@
                         sheet.setAttribute('disabled', 'disabled')
                     }
                 }
+                return this
             },
             async loadRoundSliderResources() {
                 await this.loadResourcesFiles('link', 'https://cdn.jsdelivr.net/npm/round-slider@1.6.1/dist/roundslider.min.css')
