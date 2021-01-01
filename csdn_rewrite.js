@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.3
+// @version      2.7.4
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v2.7.4  显示一键复制按钮, 未登录时已将登录后复制改为一键复制
 // @note         v2.7.3  修改 interceptCSDN 中 `csdn` 取值逻辑, 修复刷新背景图片时图片名称不变的问题
 // @note         v2.7.2  移除外链拦截行为; 增加部分元素的过渡效果;
 // @note         v2.7.1  修复文章宽度 `<1320px` 时宽度设置无效的问题
@@ -282,7 +283,7 @@
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    .csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.hljs-button.signin,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.hljs-button.signin,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -291,6 +292,9 @@
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
                     #content_views{ user-select: auto !important; }
+                    /* 重写登录后复制按钮样式 | 2021-01-01 10:45:03 */
+                    .hljs-button.signin[data-title="登录后复制"] { font-size: 0; }
+                    .hljs-button.signin[data-title="登录后复制"]:before { content: "一键复制"; font-size: 12px; vertical-align: middle; }
                     /* 增加隐藏底部推荐文章和版权信息功能 | 2020-11-11 21:03:10 */
                     .recommend-box { display: var(${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes[0]}) !important; }
                     .blog-footer-bottom { display: var(${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes[0]}) !important; }
@@ -528,7 +532,11 @@
             },
             // 复制功能
             cleanCopy() {
-                csdn.copyright && csdn.copyright.init('', '', '')
+                try {
+                    csdn.copyright && csdn.copyright.init('', '', '')
+                    // 重写复制按钮的点击事件
+                    if (hljs) hljs.signin = hljs.copyCode
+                } catch(err) {}
                 return this
             },
             onLoad() {
