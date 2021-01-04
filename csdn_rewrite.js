@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.4
+// @version      2.7.5
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v2.7.5  修复未登录状态下某些页面的一键复制无法使用的问题
 // @note         v2.7.4  显示一键复制按钮, 未登录时已将登录后复制改为一键复制
 // @note         v2.7.3  修改 interceptCSDN 中 `csdn` 取值逻辑, 修复刷新背景图片时图片名称不变的问题
 // @note         v2.7.2  移除外链拦截行为; 增加部分元素的过渡效果;
@@ -535,8 +536,20 @@
                 try {
                     csdn.copyright && csdn.copyright.init('', '', '')
                     // 重写复制按钮的点击事件
-                    if (hljs) hljs.signin = hljs.copyCode
-                } catch(err) {}
+                    try { if (hljs) hljs.signin = hljs.copyCode } catch(err) {}
+                    try { if (mdcp) mdcp.signin = mdcp.copyCode } catch(err) {}
+                    // 为所有的未登录复制按钮增加复制事件
+                    // const box = document.getElementById('mainBox')
+                    // box.addEventListener('click', evt => {
+                    //     const isCopyButton = evt.target.classList.contains('hljs-button') && evt.target.classList.contains('signin')
+                    //     console.log('click copy button: ', isCopyButton)
+                    //     try {
+                    //         mdcp ? mdcp.copyCode(evt.target) : hljs.copyCode(evt.target)
+                    //     } catch(err) {}
+                    // })
+                } catch(err) {
+                    console.log('cleanCopy() failed: ', err)
+                }
                 return this
             },
             onLoad() {
