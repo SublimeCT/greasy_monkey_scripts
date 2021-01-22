@@ -295,7 +295,8 @@
                     #content_views{ user-select: auto !important; }
                     /* 重写登录后复制按钮样式 | 2021-01-01 10:45:03 */
                     .hljs-button.signin[data-title="登录后复制"] { font-size: 0; }
-                    .hljs-button.signin[data-title="登录后复制"]:before { content: "一键复制"; font-size: 12px; vertical-align: middle; }
+                    /* 不懂 JS，不知道上一行（297）是否需要更改，但测试删除该行后脚本可以正常运行 */
+                    .hljs-button.signin[data-title="登录后复制"]:after { content: "一键复制"; font-size: 12px; vertical-align: middle; }
                     /* 增加隐藏底部推荐文章和版权信息功能 | 2020-11-11 21:03:10 */
                     .recommend-box { display: var(${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes[0]}) !important; }
                     .blog-footer-bottom { display: var(${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes[0]}) !important; }
