@@ -6,6 +6,7 @@
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v2.7.6  修复某些页面复制按钮依然显示登陆后复制的问题, 感谢 `JayYoung2021` 的反馈
 // @note         v2.7.5  修复未登录状态下某些页面的一键复制无法使用的问题
 // @note         v2.7.4  显示一键复制按钮, 未登录时已将登录后复制改为一键复制
 // @note         v2.7.3  修改 interceptCSDN 中 `csdn` 取值逻辑, 修复刷新背景图片时图片名称不变的问题
@@ -293,9 +294,10 @@
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
                     #content_views{ user-select: auto !important; }
+                    /* 复制按钮增加 !important, 修复在某些页面下样式被覆盖的问题 | 2021-01-23 13:12:57 */
                     /* 重写登录后复制按钮样式 | 2021-01-01 10:45:03 */
-                    .hljs-button.signin[data-title="登录后复制"] { font-size: 0; }
-                    .hljs-button.signin[data-title="登录后复制"]:before { content: "一键复制"; font-size: 12px; vertical-align: middle; }
+                    .hljs-button.signin[data-title="登录后复制"] { font-size: 0 !important; }
+                    .hljs-button.signin[data-title="登录后复制"]:before { content: "一键复制"; font-size: 14px; vertical-align: middle; }
                     /* 增加隐藏底部推荐文章和版权信息功能 | 2020-11-11 21:03:10 */
                     .recommend-box { display: var(${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes[0]}) !important; }
                     .blog-footer-bottom { display: var(${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes[0]}) !important; }
