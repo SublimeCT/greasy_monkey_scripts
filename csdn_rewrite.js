@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.6
+// @version      2.7.7
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v2.7.7  屏蔽小店模块, 修复 bbs.csdn.net 下的样式问题, 感谢 `独自等待` 的反馈
 // @note         v2.7.6  修复某些页面复制按钮依然显示登陆后复制的问题, 感谢 `JayYoung2021` 的反馈
 // @note         v2.7.5  修复未登录状态下某些页面的一键复制无法使用的问题
 // @note         v2.7.4  显示一键复制按钮, 未登录时已将登录后复制改为一键复制
@@ -284,8 +285,8 @@
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
-                    .recommend-item-box .content,.post_feed_box,.topic_r,.mod_topic_wrap,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    .csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .recommend-item-box .content,.post_feed_box,.topic_r,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
+                    #csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -294,6 +295,15 @@
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
                     #content_views{ user-select: auto !important; }
+
+                    body > .container-box .container_main.clearfix { width: 100% !important; }
+                    .csdn_main_container > .container_main > #left-box { width: 100% !important; }
+                    #bbs_detail_wrap > .paginate_box { width: 100% !important; }
+                    .mod_topic_wrap { width: 100% !important; }
+                    .container_main > .mod_topic_wrap > .post_feed_box { width: 100% !important; }
+                    .bbs-common-footer { width: 100% !important; }
+                    .csdn_main_container > #navs { display: none; }
+
                     /* 复制按钮增加 !important, 修复在某些页面下样式被覆盖的问题 | 2021-01-23 13:12:57 */
                     /* 重写登录后复制按钮样式 | 2021-01-01 10:45:03 */
                     .hljs-button.signin[data-title="登录后复制"] { font-size: 0 !important; }
@@ -344,19 +354,24 @@
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
                     @media screen and (max-width: 1320px) {
-                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1379px) and (min-width: 1320px) {
-                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1699px) and (min-width: 1550px) {
-                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1549px) and (min-width: 1380px) {
-                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (min-width: 1700px) {
-                        .main_father > .container#mainBox > main { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     /* 评论区样式重写 | 2019-12-27 21:32:24 */
                     .comment-list-container img.avatar {
@@ -434,6 +449,7 @@
                         cursor: pointer;
                     }
                     #setting-dialog section article .row {
+                        margin: 0;
                         margin-bottom: 10px;
                     }
                     #setting-dialog section article .row .color-picker-box {
