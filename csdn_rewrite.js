@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      2.7.7
+// @version      3.0.0
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v3.0.0  增加目录显示功能, 修复 `firefox` 下 `fixed` 定位失效的问题
 // @note         v2.7.7  屏蔽小店模块, 修复 bbs.csdn.net 下的样式问题, 感谢 `独自等待` 的反馈
 // @note         v2.7.6  修复某些页面复制按钮依然显示登陆后复制的问题, 感谢 `JayYoung2021` 的反馈
 // @note         v2.7.5  修复未登录状态下某些页面的一键复制无法使用的问题
@@ -123,6 +124,7 @@
                 defaultHideMenu: false,     // 默认是否隐藏设置按钮
                 hideRecommendBox: false,    // 默认是否隐藏底部推荐文章
                 hideCopyright: false,       // 默认是否隐藏底部版权信息
+                showCatalogue: false,       // 默认是否显示目录栏
                 showSourceLink: true,       // 是否匹配原文链接
                 articleWeightRate: '',      // 文章宽度百分比
             },
@@ -216,6 +218,28 @@
             syncHideCopyright() {
                 document.body.style.setProperty(...this.copyrightDisplayAttributes)
             },
+            get catalogueDisplayAttributes() { return ['--display-catalogue', this.range.showCatalogue ? 'block' : 'none'] },
+            syncShowCatalogue() {
+                document.body.style.setProperty(...this.catalogueDisplayAttributes)
+                if (this.range.showCatalogue) {
+                    document.body.setAttribute('show-catalogue', '')
+                    if (window.$csdn && window.$csdn.fixedSidebar) {
+                        window.$csdn.fixedSidebar({
+                            targetBox: $(".blog_container_aside"),
+                            mainBox: $("main"),
+                            sidebar: $(".blog_container_aside"),
+                            direction: "left",
+                            position: "fixed",
+                            bottom: 0,
+                            zIndex: 99,
+                            sidebarRightMargin: 8,
+                            sidebarLeftMargin: 8
+                        })
+                    }
+                } else {
+                    document.body.removeAttribute('show-catalogue')
+                }
+            },
             setArticleWeight(weight) {
                 this.range.articleWeightRate = Number(weight) || 100
                 this.save()
@@ -268,9 +292,65 @@
                 // 若设置了背景色, 则使用纯色, 否则使用自定义图片或随机图片背景
                 const bgColor = window.$CSDNCleaner.BackgroundImageRange.range.bgColor
                 const imgUrl = window.$CSDNCleaner.BackgroundImageRange.getImgUrl()
-                // const backgroundSheets = bgColor
-                //     ? `background-color: var(--background-color) !important; background-image: none;`
-                //     : `background-image: ${window.$CSDNCleaner.BackgroundImageRange.getImgUrl()};`
+                const catalogSheets = `
+                    opacity: 0.75;
+                    z-index: 233;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    transition: 0.2s opacity ease-in-out;
+                `
+                const catalogHoverSheets = `
+                    opacity: 0.825;
+                `
+                const catalogTitleSheets = `
+                    margin-bottom: 0;
+                    background-image: none;
+                    background-color: #FFF;
+                    border-bottom: 1px solid #EAEAEA;
+                    color: #222;
+                `
+                const rightCatalogueSheets = `
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > div:not(#groupfile) {
+                        display: none !important;
+                    }
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile {
+                        ${catalogSheets}
+                        margin-top: 20px;
+                    }
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile > .groupfile-div {
+                        max-height: 90vh !important;
+                    }
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile:hover {
+                        ${catalogHoverSheets}
+                    }
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile > .groupfile-div > h3  {
+                        ${catalogTitleSheets}
+                    }
+                    body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile ol > li {}
+                `
+                const leftCatalogueSheets = `
+                    /* 除目录外的其他 card */
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div:not(#asidedirectory) {
+                        display: none !important;
+                        height: 0;
+                        z-index: -32;
+                        opacity: 0;
+                        margin: 0;
+                    }
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory {
+                        ${catalogSheets}
+                    }
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory > .groupfile-div {
+                        max-height: 90vh !important;
+                    }
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory:hover {
+                        ${catalogHoverSheets}
+                    }
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory > #directory > h3 {
+                        ${catalogTitleSheets}
+                    }
+                    body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory > #directory ol > li {}
+                `
                 const sheets = `
                     body {
                         --comments-avatar-size: 50px;
@@ -280,13 +360,14 @@
                         --article-weight: ${window.$CSDNCleaner.BackgroundImageRange.getArticleWeight()};
                         ${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes.join(': ')};
                         ${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes.join(': ')};
+                        ${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes.join(': ')};
                     }
                     body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; background-size: 100% !important; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
-                    .recommend-item-box .content,.post_feed_box,.topic_r,#bbs_title_bar,#bbs_detail_wrap,#left-box,main {width: 100% !important;}
-                    #csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,#kp_box_476,.tool-box,.recommend-right,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .recommend-item-box .content,.post_feed_box,.topic_r,#bbs_title_bar,#bbs_detail_wrap,#left-box {width: 100% !important;}
+                    #csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,aside .aside-box.kind_person,#kp_box_476,.tool-box,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -303,6 +384,53 @@
                     .container_main > .mod_topic_wrap > .post_feed_box { width: 100% !important; }
                     .bbs-common-footer { width: 100% !important; }
                     .csdn_main_container > #navs { display: none; }
+                    /* 推荐文章 hover 不改变标题颜色 */
+                    .recommend-box .recommend-item-box .title-box .tit:hover {
+                        color: inherit !important;
+                    }
+                    /* 图片预览底色 */
+                    .imgViewDom.disnone { background-color: rgba(0, 0, 0, 0.5); }
+                    /* 控制目录是否显示 */
+                    /* .recommend-right,aside.recommend-right_aside { display: var(${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes[0]}) !important; } */
+                    body[show-catalogue] .recommend-right .flex-column.aside-box {}
+                    /* 在宽屏下显示在文章右侧 */
+                    @media screen and (min-width: 1550px) {
+                        body[show-catalogue] .nodata.recommend-right, aside.recommend-right_aside {
+                            display: var(${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes[0]}) !important;
+                        }
+                        ${rightCatalogueSheets}
+                        body[show-catalogue] #mainBox aside.blog_container_aside {
+                            display: none !important;
+                        }
+                    }
+                    /* 在小屏下显示在文章左侧 */
+                    @media screen and (min-width: 1380px) and (max-width: 1550px) {
+                        body[show-catalogue] #mainBox aside.blog_container_aside { display: var(${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes[0]}) !important; }
+                    }
+                    /* 在小屏下显示在文章左侧 */
+                    @media screen and (max-width: 1380px) {
+                        body[show-catalogue] #mainBox aside.blog_container_aside {
+                            display: var(${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes[0]}) !important;
+                        }
+                        body[show-catalogue] .main_father > .container#mainBox > main {
+                            float: right !important;
+                        }
+                    }
+                    @media screen and (max-width: 1549px) and (min-width: 1380px) {
+                        body[show-catalogue] .main_father > .container#mainBox > main {
+                            float: right !important;
+                        }
+                    }
+                    @media screen and (min-width: 0px) and (max-width: 1550px) {
+                        /* aside */
+                        body[show-catalogue] #mainBox aside.blog_container_aside {
+                            position: fixed !important;
+                            top: 28px !important;
+                        }
+                        ${leftCatalogueSheets}
+                    }
+                    body:not([show-catalogue]) .main_father > #mainBox > aside { display: none !important; }
+                    body:not([show-catalogue]) .recommend-right { display: none !important; }
 
                     /* 复制按钮增加 !important, 修复在某些页面下样式被覆盖的问题 | 2021-01-23 13:12:57 */
                     /* 重写登录后复制按钮样式 | 2021-01-01 10:45:03 */
@@ -349,28 +477,34 @@
                     }
                     .source-link-wrapper > .source-link-link:hover { color: #008eff !important; }
                     /* 防止网页主体内容被黑白处理, 适用于特殊日期; CSDN 真是太蠢了，只有 CSDN 把文章内容中的图片都显示成黑白的了, 严重影响阅读! | 2020-04-04 13:17:48 */
-                    html { filter: grayscale(0) !important; }
+                    /* 经测试, firefox 下会导致子元素的 fixed 定位失效, 故将其改为 none */
+                    html { filter: none !important; }
                     /* 评论区评论内容强制换行以保持一致性 | 2020-02-19 08:58:33 */
                     .comment-box .comment-list-container .comment-list .new-comment { display: block !important; }
                     /* 覆盖所有 media query 样式以防止原有的自适应样式导致布局错乱 | 2020-02-19 08:28:52 */
                     @media screen and (max-width: 1320px) {
-                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body:not([show-catalogue]) > .container-box.csdn_main_container {  float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; }
                         body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1379px) and (min-width: 1320px) {
-                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body:not([show-catalogue]) > .container-box.csdn_main_container {  float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; }
                         body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1699px) and (min-width: 1550px) {
-                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        /* body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; } */
                         body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (max-width: 1549px) and (min-width: 1380px) {
-                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body:not([show-catalogue]) > .container-box.csdn_main_container {  float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; }
                         body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     @media screen and (min-width: 1700px) {
-                        .main_father > .container#mainBox > main, body > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        .main_father > .container#mainBox > main, body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; float: none; margin: 0 auto !important; margin-top: 20px !important; }
+                        /* body:not([show-catalogue]) > .container-box.csdn_main_container { width: var(--article-weight) !important; } */
                         body > .container-box.csdn_main_container { width: calc(var(--article-weight) - 30%) !important; }
                     }
                     /* 评论区样式重写 | 2019-12-27 21:32:24 */
@@ -388,7 +522,7 @@
                     }
                     /* 防止原有的自适应样式导致布局错乱 | 2019-12-27 21:08:09 */
                     @media screen and (min-width: 1700px) {
-                        .recommend-right.align-items-stretch { color: teal; display: none !important; }
+                        .recommend-right.align-items-stretch { color: teal; display: var(${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes[0]}) !important; }
                     }
                     /* 隐藏底部 more-toolbox 按钮组 ~~和底部作者 row 中的其他信息~~; 还是保留这一行吧 ... 以后可能会把更多对文章和作者的操作放到这里面 | 2019-12-17 22:18:16 */
                     /* 修改底部 私信求帮助 按钮样式 | 2019-11-23 17:37:52 */
@@ -424,6 +558,7 @@
                         display: none;
                     }
                     #setting-dialog {
+                        z-index: 244;
                         display: block;
                         position: fixed;
                         top: 20vh;
@@ -431,6 +566,16 @@
                         height: 100%;
                         display: flex;
                         justify-content: center;
+                        transform: translateY(0) translateX(0) scale(1) skew(0);
+                        transition: 0.65s all ease-in-out;
+                    }
+                    #setting-dialog.display-none {
+                        transform: translateY(80vh) translateX(90vw) scale(0) skew(50deg, 10deg) !important;
+                        display: flex !important;
+                    }
+                    #setting-dialog section {
+                        opacity: 1;
+                        transition: 0.25s opacity ease-in-out;
                     }
                     #setting-dialog section header {
                         max-width: 550px;
@@ -571,6 +716,8 @@
                 return this
             },
             onLoad() {
+                /** 初始化目录 attribute */
+                window.$CSDNCleaner.BackgroundImageRange.syncShowCatalogue()
                 // 图片下的底色
                 // document.body.setAttribute('style', 'background-color:#EAEAEA !important')
                 // 解除跳转拦截
@@ -753,6 +900,20 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="row" id="showCatalogue-wrap">
+                                <label>是否显示目录栏: </label>
+                                <div class="tips-line">开启之后会在右侧显示文章目录</div>
+                                <div class="content">
+                                    <label style="margin-right: 15px;">
+                                        <input type="radio" value="0" ${BackgroundImageRange.range.showCatalogue ? '' : 'checked'} class="radio-showCatalogue" name="showCatalogue" />
+                                        <span>隐藏</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" value="1" ${BackgroundImageRange.range.showCatalogue ? 'checked' : ''} class="radio-showCatalogue" name="showCatalogue" />
+                                        <span>显示</span>
+                                    </label>
+                                </div>
+                            </div>
                             <div class="row">
                                 <label>联系作者: </label>
                                 <div class="content">
@@ -785,6 +946,7 @@
                 const hideMenuWrap = document.getElementById('defaultHideMenu-wrap')
                 const hideRecommendBox = document.getElementById('hideRecommendBox-wrap')
                 const hideCopyright = document.getElementById('hideCopyright-wrap')
+                const showCatalogue = document.getElementById('showCatalogue-wrap')
                 const showSourceLinkWrap = document.getElementById('showSourceLink-wrap')
                 if (!dialogWrapper) { console.error(`[${window.$CSDNCleaner.NAME}] Internal error. dialog init failed.`); return }
                 dialogWrapper.addEventListener('click', evt => {
@@ -859,6 +1021,13 @@
                     if (!dom || !dom.classList || !dom.classList.contains('radio-hideCopyright')) return
                     const val = !!Number(dom.value)
                     urlInput.hideCopyright = BackgroundImageRange.range.hideCopyright = val
+                    BackgroundImageRange.save()
+                })
+                showCatalogue.addEventListener('change', evt => {
+                    const dom = evt.target
+                    if (!dom || !dom.classList || !dom.classList.contains('radio-showCatalogue')) return
+                    const val = !!Number(dom.value)
+                    BackgroundImageRange.range.showCatalogue = val
                     BackgroundImageRange.save()
                 })
                 showSourceLinkWrap.addEventListener('change', evt => {
