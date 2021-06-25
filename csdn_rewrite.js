@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      3.0.2
+// @version      3.0.3
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v3.0.3  文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box
 // @note         v3.0.2  增加红包入口浮窗屏蔽规则
 // @note         v3.0.1  增加目录是否存在的判断, 只在存在文章目录时才显示, 避免显示空白 sidebar 的问题
 // @note         v3.0.0  增加目录显示功能, 修复 `firefox` 下 `fixed` 定位失效的问题
@@ -370,7 +371,7 @@
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,#bbs_title_bar,#bbs_detail_wrap,#left-box {width: 100% !important;}
-                    .csdn-redpack-lottery-btn-box,#csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,aside .aside-box.kind_person,#kp_box_476,.tool-box,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .reward-box-new,.csdn-redpack-lottery-btn-box,#csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,aside .aside-box.kind_person,#kp_box_476,.tool-box,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
                     .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
@@ -387,6 +388,11 @@
                     .container_main > .mod_topic_wrap > .post_feed_box { width: 100% !important; }
                     .bbs-common-footer { width: 100% !important; }
                     .csdn_main_container > #navs { display: none; }
+                    /* 文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box */
+                    .more-toolbox-new > .left-toolbox {
+                        position: relative !important;
+                        left: 0 !important;
+                    }
                     /* 推荐文章 hover 不改变标题颜色 */
                     .recommend-box .recommend-item-box .title-box .tit:hover {
                         color: inherit !important;
