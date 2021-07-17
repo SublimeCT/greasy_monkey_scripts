@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         BOSS 直聘简历下载工具
 // @namespace    SublimeCT
-// @version      1.0.0
+// @version      1.1.0
 // @description  在简历预览页直接下载当前显示的内容, 可以下载为图片(开发中)(下载内容区元素截图) 或 PDF(调用浏览器打印功能可以保存为 PDF)
+// @update       v1.0.1       更新打印简历时的样式, 去掉边距; 在预览模板时也可以打印
 // @author       SublimeCT
-// @require      file:///Users/kuidi/projects/greasy_monkey_scripts/boss_toolkit.js
 // @match        https://www.zhipin.com/web/geek/resumetpl
 // @icon         https://www.zhipin.com/favicon.ico
 // @grant        none
@@ -71,13 +71,24 @@
                 }
                 /* 下载 PDF 时的样式 */
                 body[mode="download-pdf"] {
-                    width: 820px;
+                    width: 790px;
                 }
                 body[mode="download-pdf"] #wrap {
-                    min-width: 820px;
+                    min-width: 790px;
+                }
+                body[mode="download-pdf"] .select-templates-box {
+                    display: none !important;
                 }
                 body[mode="download-pdf"] .switch-templates-wrapper > .header {
                     display: none !important;
+                }
+                body[mode="download-pdf"] .switch-templates-wrapper > .preview-box {
+                    margin: 0 !important;
+                    width: 100% !important;
+                }
+                body[mode="download-pdf"] .switch-templates-wrapper > .template-container {
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
                 }
             `
         }
