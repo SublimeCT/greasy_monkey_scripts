@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      3.0.3
+// @version      3.0.4
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v3.0.4  文中代码块解除选择禁用
 // @note         v3.0.3  文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box
 // @note         v3.0.2  增加红包入口浮窗屏蔽规则
 // @note         v3.0.1  增加目录是否存在的判断, 只在存在文章目录时才显示, 避免显示空白 sidebar 的问题
@@ -388,6 +389,12 @@
                     .container_main > .mod_topic_wrap > .post_feed_box { width: 100% !important; }
                     .bbs-common-footer { width: 100% !important; }
                     .csdn_main_container > #navs { display: none; }
+
+                    /* 文中代码块解除选择禁用 | 2021-09-06 16:32:55 */
+                    #article_content pre.prettyprint, #article_content pre.prettyprint code {
+                        user-select: auto;
+                    }
+
                     /* 文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box */
                     .more-toolbox-new > .left-toolbox {
                         position: relative !important;
