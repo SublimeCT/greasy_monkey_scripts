@@ -7,7 +7,8 @@
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
-// @note         v3.0.6  修复复制功能无法使用的问题
+// @note         v3.0.7  修复复制功能无法使用的问题
+// @note         v3.0.6  自动展开被折叠的代码块内容
 // @note         v3.0.5  将设置按钮图标替换为 SVG; 修复部分失效样式; 增加右下角广告屏蔽规则
 // @note         v3.0.4  文中代码块解除选择禁用
 // @note         v3.0.3  文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box
@@ -379,9 +380,9 @@
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
                     .recommend-item-box .content,.post_feed_box,.topic_r,#bbs_title_bar,#bbs_detail_wrap,#left-box {width: 100% !important;}
-                    .passport-login-container,.csdn-common-logo-advert,#recommendNps,.reward-box-new,.csdn-redpack-lottery-btn-box,#csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,aside .aside-box.kind_person,#kp_box_476,.tool-box,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
+                    .hide-preCode-box,.passport-login-container,.csdn-common-logo-advert,#recommendNps,.reward-box-new,.csdn-redpack-lottery-btn-box,#csdn-shop-window-top,#csdn-shop-window,.csdn-redpack-time, #csdn-redpack, .recommend-item-box.type_other, .triplet-prompt, .column-advert-box, .comment-sofa-flag, #article_content .more-toolbox, .blog-content-box a[data-report-query],main .template-box, .blog-content-box>.postTime,.post_body div[data-pid],#unlogin-tip-box,.t0.clearfix,.recommend-item-box.recommend-recommend-box,.csdn-side-toolbar>a[data-type]:not([data-type=gotop]):not([data-type="$setting"]),a[href^="https://edu.csdn.net/topic"],.adsbygoogle,.mediav_ad,.bbs_feed_ad_box,.bbs_title_h,.title_bar_fixed,#adContent,.crumbs,#page>#content>#nav,#local,#reportContent,.comment-list-container>.opt-box.text-center,.type_hot_word,.blog-expert-recommend-box,.login-mark,#passportbox,.recommend-download-box,.recommend-ad-box,#dmp_ad_58,.blog_star_enter,#header,.blog-sidebar,#new_post.login,.mod_fun_wrap,.hide_topic_box,.bbs_bread_wrap,.news-nav,#rightList.right-box,aside,aside .aside-box.kind_person,#kp_box_476,.tool-box,.pulllog-box,.adblock,.fourth_column,.hide-article-box,#csdn-toolbar
                         {display: none !important;}
-                    .hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
+                    main div.blog-content-box pre.set-code-hide,.hide-main-content,#blog_content,#bbs_detail_wrap,.article_content {height: auto !important;}
                     .comment-list-box,#bbs_detail_wrap {max-height: none !important;}
                     #main {width: 100% !important;}
                     #page {width: 80vw !important;}
@@ -398,8 +399,8 @@
                     .csdn_main_container > #navs { display: none; }
 
                     /* 文中代码块解除选择禁用 | 2021-09-06 16:32:55 */
-                    #article_content pre.prettyprint, #article_content pre.prettyprint code {
-                        user-select: auto;
+                    pre, pre code, #article_content pre.prettyprint, #article_content pre.prettyprint code {
+                        user-select: auto !important;
                     }
 
                     /* 文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box */
