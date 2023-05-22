@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      3.0.5
+// @version      3.0.6
 // @license      GPL-3.0
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v3.0.6  修复复制功能无法使用的问题
 // @note         v3.0.5  将设置按钮图标替换为 SVG; 修复部分失效样式; 增加右下角广告屏蔽规则
 // @note         v3.0.4  文中代码块解除选择禁用
 // @note         v3.0.3  文章正文底部作者信息 footer fixed 定位改回 relative; 屏蔽打赏 box
@@ -277,7 +278,7 @@
                 window.$CSDNCleaner
                     .initSettings() // 初始化按钮组
                     .appendSheets() // 添加样式
-                    // .cleanCopy() // 解禁复制功能
+                    .cleanCopy() // 解禁复制功能
                     .launch() // DOM 初始化
                     .disabledDarkSkin() // 禁用 dark skin
                     .interceptCSDN() // 拦截 csdn 对象的赋值操作
@@ -386,7 +387,7 @@
                     #page {width: 80vw !important;}
                     #bbs_title_bar {margin-top: 20px;}
                     #page>#content {margin-top: 0 !important;}
-                    #content_views{ user-select: auto !important; }
+                    #content_views, #content_views * { user-select: auto !important; }
 
                     body > .container-box .container_main.clearfix { width: 100% !important; }
                     .csdn_main_container > .container_main > #left-box { width: 100% !important; }
@@ -716,22 +717,43 @@
                 document.getElementsByTagName('head')[0].appendChild(el)
                 return this
             },
+            injectScriptElement(id, scriptCode) {
+                const existsScript = document.getElementById(id)
+                if (existsScript) existsScript.remove()
+                const head = document.querySelector('head')
+                const script = document.createElement('script')
+                // script.innerText = scriptCode
+                script.id = id
+                const code = document.createTextNode(scriptCode)
+                script.appendChild(code)
+                head.appendChild(script)
+            },
             // 复制功能
             cleanCopy() {
                 try {
-                    csdn.copyright && csdn.copyright.init('', '', '')
-                    // 重写复制按钮的点击事件
-                    try { if (hljs) hljs.signin = hljs.copyCode } catch(err) {}
-                    try { if (mdcp) mdcp.signin = mdcp.copyCode } catch(err) {}
-                    // 为所有的未登录复制按钮增加复制事件
-                    // const box = document.getElementById('mainBox')
-                    // box.addEventListener('click', evt => {
-                    //     const isCopyButton = evt.target.classList.contains('hljs-button') && evt.target.classList.contains('signin')
-                    //     console.log('click copy button: ', isCopyButton)
-                    //     try {
-                    //         mdcp ? mdcp.copyCode(evt.target) : hljs.copyCode(evt.target)
-                    //     } catch(err) {}
-                    // })
+                    window.$CSDNCleaner.injectScriptElement('clean-copy-script', `
+                        /** 解禁复制功能 - ${window.$CSDNCleaner.NAME} */
+                        try { if (window.hljs) window.hljs.signin = window.hljs.copyCode } catch(err) {};
+                        try { if (window.mdcp) window.mdcp.signin = window.mdcp.copyCode } catch(err) {};
+                        /** 将 copyright 改为不可写, 防止添加复制事件 */
+                        if (window.csdn) {
+                            try {
+                                Object.defineProperty(window.csdn.copyright, 'init', {
+                                    value: function() {
+                                        $("#content_views").unbind("copy");
+                                    },
+                                    writable: false,
+                                })
+                                Object.defineProperty(window.csdn.copyright, 'textData', {
+                                    value: '',
+                                    writable: false,
+                                })
+                            } catch (err) {}
+                            $("#content_views").bind('click', function() {
+                                $("#content_views").unbind("copy");
+                            });
+                        }
+                    `)
                 } catch(err) {
                     console.log('cleanCopy() failed: ', err)
                 }
