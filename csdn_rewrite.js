@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      3.0.7
+// @version      3.0.8
 // @license      GPL-3.0
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
 // @author       sven
+// @note         v3.0.8  移除包含黑色样式的 skin css 文件; 固定背景图始终覆盖可视区域显示
 // @note         v3.0.7  修复复制功能无法使用的问题
 // @note         v3.0.6  自动展开被折叠的代码块内容
 // @note         v3.0.5  将设置按钮图标替换为 SVG; 修复部分失效样式; 增加右下角广告屏蔽规则
@@ -280,9 +281,22 @@
                     .initSettings() // 初始化按钮组
                     .appendSheets() // 添加样式
                     .cleanCopy() // 解禁复制功能
+                    .removeSkinCss() // 移除黑色背景色的皮肤样式 css 文件
                     .launch() // DOM 初始化
                     .disabledDarkSkin() // 禁用 dark skin
                     .interceptCSDN() // 拦截 csdn 对象的赋值操作
+            },
+            removeSkinCss() {
+                const linkElements = document.getElementsByTagName('link')
+                if (linkElements && linkElements.length) {
+                    for (let linkIndex = linkElements.length; linkIndex--;) {
+                        const link = linkElements[linkIndex]
+                        if (link.href && link.href.indexOf('/themesSkin/') !== -1) {
+                            link.remove()
+                        }
+                    }
+                }
+                return this
             },
             /**
              * 拦截源码中对于 `window.csdn` 的赋值操作
@@ -299,7 +313,7 @@
                     $csdn.middleJump = null // 移除跳转链接时的事件绑定函数
                 }
             },
-            // 生成 sheets
+            /** 生成 sheets */
             _getSheets() {
                 // 若设置了背景色, 则使用纯色, 否则使用自定义图片或随机图片背景
                 const bgColor = window.$CSDNCleaner.BackgroundImageRange.range.bgColor
@@ -375,7 +389,7 @@
                         ${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes.join(': ')};
                         ${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes.join(': ')};
                     }
-                    body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; background-size: 100% !important; }
+                    body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
                     main {margin: 20px;}
                     #local { position: fixed; left: -99999px }
