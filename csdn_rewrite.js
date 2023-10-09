@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         CSDN 去广告沉浸阅读模式
 // @namespace    http://tampermonkey.net/
-// @version      3.0.11
+// @version      3.0.12
 // @license      GPL-3.0
 // @description  沉浸式阅读 🌈 使用随机背景图片 🎬 重构页面布局 🎯 净化剪切板 🎨 屏蔽一切影响阅读的元素 🎧
 // @description  背景图片取自 https://www.baidu.com/home/skin/data/skin
 // @icon         https://avatar.csdn.net/D/7/F/3_nevergk.jpg
-// @author       sven
+// @author       SublimeCT
+// @note         v3.0.12 修复与 dark reader 一起使用时背景图片被遮挡的问题; 修复目录高度异常导致的无法滚动的问题
 // @note         v3.0.11 隐藏文章底部的创作提示框及提问推广元素
 // @note         v3.0.10 隐藏文章底部和右下角工具栏中影响阅读的提示元素; 修复原文链接图标位置样式; 更新设置弹窗中的按钮样式
 // @note         v3.0.9  隐藏右下角登录提示弹窗
@@ -347,7 +348,7 @@
                         margin-top: 20px;
                     }
                     body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile > .groupfile-div {
-                        max-height: 90vh !important;
+                        max-height: 90vh;
                     }
                     body[show-catalogue] aside.recommend-right_aside > #recommend-right > #groupfile:hover {
                         ${catalogHoverSheets}
@@ -371,7 +372,7 @@
                         ${catalogSheets}
                     }
                     body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory > .groupfile-div {
-                        max-height: 90vh !important;
+                        max-height: 90vh;
                     }
                     body[show-catalogue] #mainBox aside.blog_container_aside > div#asidedirectory:hover {
                         ${catalogHoverSheets}
@@ -391,6 +392,10 @@
                         ${window.$CSDNCleaner.BackgroundImageRange.recommendBoxDisplayAttributes.join(': ')};
                         ${window.$CSDNCleaner.BackgroundImageRange.copyrightDisplayAttributes.join(': ')};
                         ${window.$CSDNCleaner.BackgroundImageRange.catalogueDisplayAttributes.join(': ')};
+                    }
+                    /* 修复与 dark reader 一起使用时背景图片被遮挡的问题 */
+                    html[data-darkreader-scheme] body {
+                        height: auto;
                     }
                     body:not(.clean-mode) { background-color: var(--background-color) !important; background-image: var(--background-image) !important; background-attachment: fixed !important;background-size: cover; background-repeat: no-repeat; }
                     body>#page>#content, body>.container.container-box,main,body>.main.clearfix { opacity: 0.9; }
